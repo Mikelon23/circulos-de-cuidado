@@ -1,0 +1,14 @@
+{
+  "name": "@circulos/api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "build": "echo \"No build step configured\""
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "@circulos/shared": "^1.0.0"
+  }
+}

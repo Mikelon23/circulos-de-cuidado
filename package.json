@@ -2,13 +2,14 @@
   "name": "circulos-de-cuidado",
   "private": true,
   "version": "1.0.0",
+  "packageManager": "npm@10.8.2",
   "workspaces": [
-    "backend",
-    "frontend"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "dev:backend": "npm --workspace backend run dev",
-    "dev:frontend": "npm --workspace frontend run dev",
-    "build": "npm --workspace backend run build && npm --workspace frontend run build"
+    "dev": "npm --workspace apps/api run dev & npm --workspace apps/web run dev",
+    "build": "npm --workspace apps/api run build && npm --workspace apps/web run build",
+    "test": "echo \"No tests configured yet\""
   }
 }
