@@ -96,28 +96,28 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ## Base del proyecto
 ### Tarea 01
 - id: 1
-- estado: pendiente
+- estado: completado
 - titulo: Crear repositorio en GitHub
 - objetivo: Inicializar repo `circulos-de-cuidado` con README, LICENSE (MIT), CODE\_OF\_CONDUCT, CONTRIBUTING
 - entregable: Repo público funcional
 - contexto: revisar tareas cercanas para mantener la lógica del roadmap.
 ### Tarea 02
 - id: 2
-- estado: pendiente
+- estado: completado
 - titulo: Definir arquitectura zero-cost
 - objetivo: Documentar stack: frontend (React/Vue vanilla), backend (Node/Express o Python/FastAPI), DB (SQLite/PostgreSQL self-hosted), hosting (Vercel/Netlify/Railway free tier), video (Jitsi self-hosted o Daily.co free)
 - entregable: `docs/ARQUITECTURA.md`
 - contexto: revisar tareas cercanas para mantener la lógica del roadmap.
 ### Tarea 03
 - id: 3
-- estado: pendiente
+- estado: completado
 - titulo: Configurar entorno de desarrollo local
 - objetivo: Docker Compose con: app web, API, base de datos, redis (cache/sesiones)
 - entregable: `docker-compose.yml` funcional
 - contexto: revisar tareas cercanas para mantener la lógica del roadmap.
 ### Tarea 04
 - id: 4
-- estado: pendiente
+- estado: completado
 - titulo: Crear estructura de carpetas del monorepo
 - objetivo: `/apps/web`, `/apps/api`, `/packages/shared`, `/docs`, `/scripts`
 - entregable: Estructura limpia
