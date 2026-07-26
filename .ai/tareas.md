@@ -21,7 +21,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 | 2 | Definir arquitectura zero-cost | `docs/ARQUITECTURA.md` | completado |
 | 3 | Configurar entorno de desarrollo local | `docker-compose.yml` funcional | completado |
 | 4 | Crear estructura de carpetas del monorepo | Estructura limpia | completado |
-| 5 | Configurar CI/CD con GitHub Actions | `.github/workflows/ci.yml` | pendiente |
+| 5 | Configurar CI/CD con GitHub Actions | `.github/workflows/ci.yml` | completado |
 | 6 | Definir guía de estilo de código | `docs/ESTILO.md` | pendiente |
 | 7 | Crear plantilla de issues y PRs | `.github/` templates | pendiente |
 | 8 | Documentar stack zero-cost detallado | `docs/SERVICIOS_GRATUITOS.md` | pendiente |
@@ -124,7 +124,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 - contexto: revisar tareas cercanas para mantener la lógica del roadmap.
 ### Tarea 05
 - id: 5
-- estado: pendiente
+- estado: completado
 - titulo: Configurar CI/CD con GitHub Actions
 - objetivo: Lint, test, build automático en PR y push a main
 - entregable: `.github/workflows/ci.yml`
