@@ -10,6 +10,11 @@
   "scripts": {
     "dev": "npm --workspace apps/api run dev & npm --workspace apps/web run dev",
     "build": "npm --workspace apps/api run build && npm --workspace apps/web run build",
-    "test": "echo \"No tests configured yet\""
+    "lint": "eslint . --ignore-pattern \"apps/web/dist/**\"",
+    "test": "node --test tests/ci.test.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^8.57.0"
   }
 }
