@@ -44,13 +44,13 @@ scripts/    # Utilidades de desarrollo
 
 ## Roadmap
 
-| Área | Tarea | Estado |
-| --- | --- | --- |
-| Infraestructura | Entorno local con Docker | ✅ Completado |
-| Frontend | Diseño base y navegación | 🟡 En progreso |
-| Backend | API base y salud del sistema | 🟡 En progreso |
-| Datos | Modelado y persistencia | ⏳ Pendiente |
-| Producto | Módulos de cuidado y bienestar | ⏳ Pendiente |
+| Área            | Tarea                          | Estado         |
+| --------------- | ------------------------------ | -------------- |
+| Infraestructura | Entorno local con Docker       | ✅ Completado  |
+| Frontend        | Diseño base y navegación       | 🟡 En progreso |
+| Backend         | API base y salud del sistema   | 🟡 En progreso |
+| Datos           | Modelado y persistencia        | ⏳ Pendiente   |
+| Producto        | Módulos de cuidado y bienestar | ⏳ Pendiente   |
 
 ## Contribución
 
