@@ -19,32 +19,32 @@
 
 ### Comparativa de stack
 
-| Área | Tecnología elegida | Por qué | Alternativa mencionada | Motivo de elección |
-|---|---|---|---|---|
-| Frontend | React 19 | Ecosistema maduro, rendimiento, compatibilidad con Vite | Next.js | Next aporta SSR pero React + Vite ofrece simplicidad, builds rápidos y menor costo operativo | 
-| Bundler | Vite 6 | Desarrollo instantáneo y compilación eficiente | - | - |
-| UI | Tailwind CSS 4 | Estilos utilitarios, rápido prototipado y menor CSS custom | - | - |
-| Routing | React Router 7 | Control claro de rutas SPA y navegación accesible | - | - |
-| Estado | Zustand 5 | Ligero, simple y fácil de usar en apps pequeñas/medianas | Redux | Más complejo y verboso | 
-| Datos | React Query 5 | Fetching y cache de datos optimizado, revalidación automática | SWR | Similar, pero React Query es más completo para este proyecto | 
-| Video | Jitsi iframe | Video conferencia open source gratuita, fácil de integrar | Twilio/Zoom/Daily | Servicios pagos o no gratuitos | 
-| PWA | Web Push API | Permite notificaciones y engagement sin costo | - | - |
-| Backend | Node.js 22 LTS | Soporte moderno, estabilidad y compatibilidad con Prisma | - | - |
-| Framework | Express 5 | Minimalista, flexible y veloz para APIs sencillas | Nest.js/Fastify | Más estructurado o especializado, pero con mayor complejidad | 
-| ORM | Prisma 6 | Tipado fuerte, migrations y seguridad contra SQL injection | - | - |
-| Base de datos | PostgreSQL 16 | SQL, ACID, relaciones, gratis en Supabase | MongoDB | No relacional, menos apropiado para datos de comunidad y reporting | 
-| Cache | Redis 7 | Cache, sesiones y pub/sub para tiempo real | Solo PostgreSQL | Menos eficiente para cache y estado temporal | 
-| Auth | JWT | Autenticación stateless, escalable y compatible con APIs | - | - |
-| Passhash | bcryptjs | Hash seguro con cost configurable 12 | - | - |
-| Validación | Zod | Validación runtime y tipos TypeScript | - | - |
-| Tiempo real | Socket.io | Comunicación en tiempo real para chat/estado de presencia | - | - |
-| Jobs | node-cron | Tareas programadas ligeras en Node.js | - | - |
-| Hosting frontend | Vercel | Gratis para proyectos open source y despliegues rápidos | Cloudflare Pages | Alternativa viable gratuita | 
-| Hosting backend | Railway | Tier gratuito, despliegue fácil de Node | Render | Backup gratuito y fiable | 
-| DB gratis | Supabase | PostgreSQL managed gratis y friendly | - | - |
-| Redis gratis | Upstash Redis | Redis con plan gratuito y buena integración | - | - |
-| Email | Resend | Opciones gratuitas para envíos low-volume | - | - |
-| CI/CD | GitHub Actions | Integración nativa con repo y workflows gratis | - | - |
+| Área             | Tecnología elegida | Por qué                                                       | Alternativa mencionada | Motivo de elección                                                                           |
+| ---------------- | ------------------ | ------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------- |
+| Frontend         | React 19           | Ecosistema maduro, rendimiento, compatibilidad con Vite       | Next.js                | Next aporta SSR pero React + Vite ofrece simplicidad, builds rápidos y menor costo operativo |
+| Bundler          | Vite 6             | Desarrollo instantáneo y compilación eficiente                | -                      | -                                                                                            |
+| UI               | Tailwind CSS 4     | Estilos utilitarios, rápido prototipado y menor CSS custom    | -                      | -                                                                                            |
+| Routing          | React Router 7     | Control claro de rutas SPA y navegación accesible             | -                      | -                                                                                            |
+| Estado           | Zustand 5          | Ligero, simple y fácil de usar en apps pequeñas/medianas      | Redux                  | Más complejo y verboso                                                                       |
+| Datos            | React Query 5      | Fetching y cache de datos optimizado, revalidación automática | SWR                    | Similar, pero React Query es más completo para este proyecto                                 |
+| Video            | Jitsi iframe       | Video conferencia open source gratuita, fácil de integrar     | Twilio/Zoom/Daily      | Servicios pagos o no gratuitos                                                               |
+| PWA              | Web Push API       | Permite notificaciones y engagement sin costo                 | -                      | -                                                                                            |
+| Backend          | Node.js 22 LTS     | Soporte moderno, estabilidad y compatibilidad con Prisma      | -                      | -                                                                                            |
+| Framework        | Express 5          | Minimalista, flexible y veloz para APIs sencillas             | Nest.js/Fastify        | Más estructurado o especializado, pero con mayor complejidad                                 |
+| ORM              | Prisma 6           | Tipado fuerte, migrations y seguridad contra SQL injection    | -                      | -                                                                                            |
+| Base de datos    | PostgreSQL 16      | SQL, ACID, relaciones, gratis en Supabase                     | MongoDB                | No relacional, menos apropiado para datos de comunidad y reporting                           |
+| Cache            | Redis 7            | Cache, sesiones y pub/sub para tiempo real                    | Solo PostgreSQL        | Menos eficiente para cache y estado temporal                                                 |
+| Auth             | JWT                | Autenticación stateless, escalable y compatible con APIs      | -                      | -                                                                                            |
+| Passhash         | bcryptjs           | Hash seguro con cost configurable 12                          | -                      | -                                                                                            |
+| Validación       | Zod                | Validación runtime y tipos TypeScript                         | -                      | -                                                                                            |
+| Tiempo real      | Socket.io          | Comunicación en tiempo real para chat/estado de presencia     | -                      | -                                                                                            |
+| Jobs             | node-cron          | Tareas programadas ligeras en Node.js                         | -                      | -                                                                                            |
+| Hosting frontend | Vercel             | Gratis para proyectos open source y despliegues rápidos       | Cloudflare Pages       | Alternativa viable gratuita                                                                  |
+| Hosting backend  | Railway            | Tier gratuito, despliegue fácil de Node                       | Render                 | Backup gratuito y fiable                                                                     |
+| DB gratis        | Supabase           | PostgreSQL managed gratis y friendly                          | -                      | -                                                                                            |
+| Redis gratis     | Upstash Redis      | Redis con plan gratuito y buena integración                   | -                      | -                                                                                            |
+| Email            | Resend             | Opciones gratuitas para envíos low-volume                     | -                      | -                                                                                            |
+| CI/CD            | GitHub Actions     | Integración nativa con repo y workflows gratis                | -                      | -                                                                                            |
 
 ## 3. Diagrama de arquitectura
 
@@ -124,13 +124,13 @@ Elegimos **React + Vite** por su simplicidad, velocidad de desarrollo y menor re
 
 ## 7. Escalabilidad futura
 
-| Escenario | Cambio necesario | Estimación costo cero | Nota |
-|---|---|---|---|
-| >500 usuarios simultáneos | Cache en Redis, escalado de backend | Mantiene free tier si no supera límites | Usar Upstash y optimizar queries |
-| >10 GB de datos | Archivar datos, limpiar logs, usar almacenamiento adicional | Puede requerir plan pago si supera free tier | Priorizar eliminación y compactación |
-| Self-hosted Jitsi | Instalar Jitsi en VPS gratuito o low-cost | Self-hosting con un servidor pequeño | Requiere ancho de banda y mantenimiento |
-| Backup de DB | Snapshots y duplicación | Gratuito con límites | Usar Supabase backups y exports periódicos |
-| Más de 1k usuarios | Distribución de frontend y backend | Mantener deployment en Vercel/Railway con monitor | Evaluar migración a instancias dedicadas si hay costo |
+| Escenario                 | Cambio necesario                                            | Estimación costo cero                             | Nota                                                  |
+| ------------------------- | ----------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------- |
+| >500 usuarios simultáneos | Cache en Redis, escalado de backend                         | Mantiene free tier si no supera límites           | Usar Upstash y optimizar queries                      |
+| >10 GB de datos           | Archivar datos, limpiar logs, usar almacenamiento adicional | Puede requerir plan pago si supera free tier      | Priorizar eliminación y compactación                  |
+| Self-hosted Jitsi         | Instalar Jitsi en VPS gratuito o low-cost                   | Self-hosting con un servidor pequeño              | Requiere ancho de banda y mantenimiento               |
+| Backup de DB              | Snapshots y duplicación                                     | Gratuito con límites                              | Usar Supabase backups y exports periódicos            |
+| Más de 1k usuarios        | Distribución de frontend y backend                          | Mantener deployment en Vercel/Railway con monitor | Evaluar migración a instancias dedicadas si hay costo |
 
 ## 8. Convenciones
 
