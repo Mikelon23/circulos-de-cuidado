@@ -159,7 +159,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 07
 
 - id: 7
-- estado: pendiente
+- estado: completado
 - titulo: Crear plantilla de issues y PRs
 - objetivo: Templates para bugs, features, tareas en español
 - entregable: `.github/` templates
