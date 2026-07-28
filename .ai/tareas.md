@@ -30,7 +30,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |   4 | Crear estructura de carpetas del monorepo       | Estructura limpia              | completado |
 |   5 | Configurar CI/CD con GitHub Actions             | `.github/workflows/ci.yml`     | completado |
 |   6 | Definir guía de estilo de código                | `docs/ESTILO.md`               | completado  |
-|   7 | Crear plantilla de issues y PRs                 | `.github/` templates           | pendiente  |
+|   7 | Crear plantilla de issues y PRs                 | `.github/` templates           | completado  |
 |   8 | Documentar stack zero-cost detallado            | `docs/SERVICIOS_GRATUITOS.md`  | pendiente  |
 |   9 | Diseñar schema de base de datos                 | `docs/DB_SCHEMA.md` + diagrama | pendiente  |
 |  10 | Implementar migraciones iniciales               | Migraciones ejecutables        | pendiente  |
@@ -159,7 +159,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 07
 
 - id: 7
-- estado: pendiente
+- estado: completado
 - titulo: Crear plantilla de issues y PRs
 - objetivo: Templates para bugs, features, tareas en español
 - entregable: `.github/` templates
