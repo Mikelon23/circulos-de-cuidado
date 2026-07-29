@@ -49,7 +49,7 @@ scripts/    # Utilidades de desarrollo
 | Infraestructura | Entorno local con Docker       | ✅ Completado  |
 | Frontend        | Diseño base y navegación       | 🟡 En progreso |
 | Backend         | API base y salud del sistema   | 🟡 En progreso |
-| Datos           | Modelado y persistencia        | ⏳ Pendiente   |
+| Datos           | Modelado y persistencia        | ✅ Completado  |
 | Producto        | Módulos de cuidado y bienestar | ⏳ Pendiente   |
 
 ## Contribución
