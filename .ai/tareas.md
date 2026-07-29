@@ -32,7 +32,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |   6 | Definir guía de estilo de código                | `docs/ESTILO.md`               | completado  |
 |   7 | Crear plantilla de issues y PRs                 | `.github/` templates           | completado  |
 |   8 | Documentar stack zero-cost detallado            | `docs/SERVICIOS_GRATUITOS.md`  | completado  |
-|   9 | Diseñar schema de base de datos                 | `docs/DB_SCHEMA.md` + diagrama | pendiente  |
+|   9 | Diseñar schema de base de datos                 | `docs/DB_SCHEMA.md` + diagrama | completado |
 |  10 | Implementar migraciones iniciales               | Migraciones ejecutables        | pendiente  |
 |  11 | Crear modelo `Usuario`                          | API endpoints + tests          | pendiente  |
 |  12 | Crear modelo `PerfilCuidador`                   | CRUD completo                  | pendiente  |
@@ -179,7 +179,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 09
 
 - id: 9
-- estado: pendiente
+- estado: completado
 - titulo: Diseñar schema de base de datos
 - objetivo: Usuarios, perfiles de cuidador, circulos, sesiones, mensajes, check-ins emocionales, facilitadores
 - entregable: `docs/DB_SCHEMA.md` + diagrama
