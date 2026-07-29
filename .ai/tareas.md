@@ -31,7 +31,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |   5 | Configurar CI/CD con GitHub Actions             | `.github/workflows/ci.yml`     | completado |
 |   6 | Definir guía de estilo de código                | `docs/ESTILO.md`               | completado  |
 |   7 | Crear plantilla de issues y PRs                 | `.github/` templates           | completado  |
-|   8 | Documentar stack zero-cost detallado            | `docs/SERVICIOS_GRATUITOS.md`  | pendiente  |
+|   8 | Documentar stack zero-cost detallado            | `docs/SERVICIOS_GRATUITOS.md`  | completado  |
 |   9 | Diseñar schema de base de datos                 | `docs/DB_SCHEMA.md` + diagrama | pendiente  |
 |  10 | Implementar migraciones iniciales               | Migraciones ejecutables        | pendiente  |
 |  11 | Crear modelo `Usuario`                          | API endpoints + tests          | pendiente  |
@@ -168,7 +168,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 08
 
 - id: 8
-- estado: pendiente
+- estado: completado
 - titulo: Documentar stack zero-cost detallado
 - objetivo: Lista de servicios gratuitos: Vercel, Supabase free tier, GitHub Pages, Jitsi Meet, SendGrid free, etc.
 - entregable: `docs/SERVICIOS_GRATUITOS.md`
