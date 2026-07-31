@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model usuarios {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  email              String                    @unique @db.VarChar(255)
+  password_hash      String?                   @db.VarChar(255)
+  nombre_real        String?                   @db.VarChar(255)
+  nombre_visible     String?                   @db.VarChar(255)
+  avatar_url         String?
+  rol                String                    @db.VarChar(20)
+  email_verificado   Boolean                   @default(false)
+  anonimo            Boolean                   @default(false)
+  oauth_provider     String?                   @db.VarChar(50)
+  oauth_id           String?                   @db.VarChar(255)
+  created_at         DateTime                  @default(now())
+  updated_at         DateTime                  @updatedAt
+  deleted_at         DateTime?
+
+  perfil_cuidador    perfil_cuidador?
+  facilitador        facilitadores?
+  miembros_circulo   miembros_circulo[]
+  mensajes           mensajes[]
+  check_ins          check_ins_emocionales[]
+
+  @@map("usuarios")
+}
+
+model perfil_cuidador {
+  id                       String   @id @default(uuid()) @db.Uuid
+  usuario_id               String   @unique @db.Uuid
+  edad                     Int?
+  enfermedad_principal     String?  @db.VarChar(255)
+  fase_cuidado             String?  @db.VarChar(50)
+  disponibilidad_horaria   Json?
+  idioma                   String?  @db.VarChar(50)
+  ubicacion                String?  @db.VarChar(255)
+  urgencia                 Int?
+  notas                    String?
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@map("perfil_cuidador")
+}
+
+model facilitadores {
+  id                    String   @id @default(uuid()) @db.Uuid
+  usuario_id            String   @unique @db.Uuid
+  experiencia_years     Int?
+  especialidades        Json?
+  certificaciones       Json?
+  disponibilidad        Json?
+  calificacion_promedio Decimal?  @db.Decimal(3, 2)
+  activo                Boolean  @default(true)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  circulos circulos[]
+  sesiones sesiones[]
+
+  @@map("facilitadores")
+}
+
+model circulos {
+  id                String   @id @default(uuid()) @db.Uuid
+  nombre            String   @db.VarChar(255)
+  tema              String?  @db.VarChar(255)
+  descripcion       String?
+  facilitador_id    String?  @db.Uuid
+  capacidad_minima  Int
+  capacidad_maxima  Int
+  estado            String   @db.VarChar(20)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  facilitador facilitadores? @relation(fields: [facilitador_id], references: [id], onDelete: SetNull)
+  miembros    miembros_circulo[]
+  sesiones    sesiones[]
+  mensajes    mensajes[]
+
+  @@map("circulos")
+}
+
+model miembros_circulo {
+  id             String    @id @default(uuid()) @db.Uuid
+  circulo_id     String    @db.Uuid
+  usuario_id     String    @db.Uuid
+  rol            String    @db.VarChar(20)
+  estado         String    @db.VarChar(20)
+  fecha_ingreso  DateTime?
+  fecha_salida   DateTime?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  circulo circulos @relation(fields: [circulo_id], references: [id], onDelete: Cascade)
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@unique([circulo_id, usuario_id])
+  @@map("miembros_circulo")
+}
+
+model sesiones {
+  id                  String    @id @default(uuid()) @db.Uuid
+  circulo_id          String    @db.Uuid
+  facilitador_id      String?   @db.Uuid
+  titulo              String    @db.VarChar(255)
+  fecha_programada    DateTime
+  duracion_minutos    Int
+  tipo                String    @db.VarChar(20)
+  estado              String    @db.VarChar(20)
+  enlace_reunion      String?
+  notas               String?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  circulo     circulos @relation(fields: [circulo_id], references: [id], onDelete: Cascade)
+  facilitador  facilitadores? @relation(fields: [facilitador_id], references: [id], onDelete: SetNull)
+
+  @@map("sesiones")
+}
+
+model mensajes {
+  id           String    @id @default(uuid()) @db.Uuid
+  circulo_id   String    @db.Uuid
+  usuario_id   String    @db.Uuid
+  contenido    String
+  tipo         String    @db.VarChar(20)
+  reply_to_id  String?   @db.Uuid
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  deleted_at   DateTime?
+
+  circulo      circulos @relation(fields: [circulo_id], references: [id], onDelete: Cascade)
+  usuario      usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  reply_to     mensajes? @relation("MensajeReply", fields: [reply_to_id], references: [id], onDelete: SetNull)
+  replies      mensajes[] @relation("MensajeReply")
+
+  @@map("mensajes")
+}
+
+model check_ins_emocionales {
+  id              String   @id @default(uuid()) @db.Uuid
+  usuario_id      String   @db.Uuid
+  pregunta        String   @db.VarChar(255)
+  escala          Int
+  nota            String?
+  respondido_en   DateTime @default(now())
+  created_at      DateTime @default(now())
+
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@map("check_ins_emocionales")
+}

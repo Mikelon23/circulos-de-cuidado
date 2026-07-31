@@ -33,7 +33,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |   7 | Crear plantilla de issues y PRs                 | `.github/` templates           | completado  |
 |   8 | Documentar stack zero-cost detallado            | `docs/SERVICIOS_GRATUITOS.md`  | completado  |
 |   9 | Diseñar schema de base de datos                 | `docs/DB_SCHEMA.md` + diagrama | completado |
-|  10 | Implementar migraciones iniciales               | Migraciones ejecutables        | pendiente  |
+|  10 | Implementar migraciones iniciales               | Migraciones ejecutables        | completado |
 |  11 | Crear modelo `Usuario`                          | API endpoints + tests          | pendiente  |
 |  12 | Crear modelo `PerfilCuidador`                   | CRUD completo                  | pendiente  |
 |  13 | Crear modelo `Circulo`                          | CRUD completo                  | pendiente  |
@@ -188,7 +188,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 10
 
 - id: 10
-- estado: pendiente
+- estado: completado
 - titulo: Implementar migraciones iniciales
 - objetivo: Crear tablas con ORM (Prisma/TypeORM/Sequelize o SQLAlchemy/Alembic)
 - entregable: Migraciones ejecutables
