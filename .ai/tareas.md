@@ -35,7 +35,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |   9 | Diseñar schema de base de datos                 | `docs/DB_SCHEMA.md` + diagrama | completado |
 |  10 | Implementar migraciones iniciales               | Migraciones ejecutables        | completado |
 |  11 | Crear modelo `Usuario`                          | API endpoints + tests          | completado |
-|  12 | Crear modelo `PerfilCuidador`                   | CRUD completo                  | pendiente  |
+|  12 | Crear modelo `PerfilCuidador`                   | CRUD completo                  | completado  |
 |  13 | Crear modelo `Circulo`                          | CRUD completo                  | pendiente  |
 |  14 | Crear modelo `MiembroCirculo`                   | CRUD completo                  | pendiente  |
 |  15 | Crear modelo `Sesion`                           | CRUD completo                  | pendiente  |
@@ -206,7 +206,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 12
 
 - id: 12
-- estado: pendiente
+- estado: completado
 - titulo: Crear modelo `PerfilCuidador`
 - objetivo: Datos del adulto mayor, enfermedad, fase del cuidado, disponibilidad, geografía
 - entregable: CRUD completo
