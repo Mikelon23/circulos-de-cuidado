@@ -215,7 +215,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 13
 
 - id: 13
-- estado: pendiente
+- estado: completado
 - titulo: Crear modelo `Circulo`
 - objetivo: Grupos de 6-8 personas, tema, facilitador asignado, estado (activo/pausado/cerrado)
 - entregable: CRUD completo
