@@ -224,7 +224,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 14
 
 - id: 14
-- estado: pendiente
+- estado: completado
 - titulo: Crear modelo `MiembroCirculo`
 - objetivo: Relación usuario-círculo, fecha de ingreso, rol (participante/oyente), estado
 - entregable: CRUD completo
