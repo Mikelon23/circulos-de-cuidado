@@ -36,8 +36,8 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  10 | Implementar migraciones iniciales               | Migraciones ejecutables        | completado |
 |  11 | Crear modelo `Usuario`                          | API endpoints + tests          | completado |
 |  12 | Crear modelo `PerfilCuidador`                   | CRUD completo                  | completado  |
-|  13 | Crear modelo `Circulo`                          | CRUD completo                  | pendiente  |
-|  14 | Crear modelo `MiembroCirculo`                   | CRUD completo                  | pendiente  |
+|  13 | Crear modelo `Circulo`                          | CRUD completo                  | completado  |
+|  14 | Crear modelo `MiembroCirculo`                   | CRUD completo                  | completado  |
 |  15 | Crear modelo `Sesion`                           | CRUD completo                  | pendiente  |
 |  16 | Crear modelo `CheckInEmocional`                 | CRUD + historial               | pendiente  |
 |  17 | Crear modelo `Facilitador`                      | CRUD completo                  | pendiente  |
