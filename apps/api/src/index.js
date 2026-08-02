@@ -3,12 +3,14 @@ import { createHealthCheck } from '@circulos/shared';
 import { createUserService } from './users.cjs';
 import { createCaregiverProfileService } from './caregiver-profiles.cjs';
 import { createCircleService } from './circles.cjs';
+import { createCircleMemberService } from './circle-members.cjs';
 
 const app = express();
 const port = process.env.PORT || 3000;
 const userService = createUserService();
 const caregiverProfileService = createCaregiverProfileService();
 const circleService = createCircleService();
+const circleMemberService = createCircleMemberService();
 
 app.use(express.json());
 
@@ -112,6 +114,46 @@ app.patch('/api/v1/circles/:id', (req, res) => {
 app.delete('/api/v1/circles/:id', (req, res) => {
   try {
     const deleted = circleService.deleteCircle(req.params.id);
+    res.json({ data: deleted });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circle-members', (req, res) => {
+  try {
+    const created = circleMemberService.createMember(req.body || {});
+    res.status(201).json({ data: created });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-members', (_req, res) => {
+  res.json({ data: circleMemberService.listMembers() });
+});
+
+app.get('/api/v1/circle-members/:id', (req, res) => {
+  try {
+    const member = circleMemberService.getMember(req.params.id);
+    res.json({ data: member });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/circle-members/:id', (req, res) => {
+  try {
+    const updated = circleMemberService.updateMember(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/circle-members/:id', (req, res) => {
+  try {
+    const deleted = circleMemberService.deleteMember(req.params.id);
     res.json({ data: deleted });
   } catch (error) {
     res.status(404).json({ error: error.message });
