@@ -233,7 +233,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 15
 
 - id: 15
-- estado: pendiente
+- estado: completado
 - titulo: Crear modelo `Sesion`
 - objetivo: Sesiones programadas, fecha/hora, duración, tipo (video/chat), estado, notas
 - entregable: CRUD completo
@@ -242,7 +242,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 16
 
 - id: 16
-- estado: pendiente
+- estado: completado
 - titulo: Crear modelo `CheckInEmocional`
 - objetivo: Pregunta diaria, escala 1-10, nota opcional, timestamp
 - entregable: CRUD + historial
