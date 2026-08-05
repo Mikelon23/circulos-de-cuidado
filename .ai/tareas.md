@@ -260,7 +260,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 18
 
 - id: 18
-- estado: pendiente
+- estado: completado
 - titulo: Implementar seeders de desarrollo
 - objetivo: Datos de prueba: 20 usuarios, 5 círculos, 3 facilitadores, 50 check-ins
 - entregable: `npm run seed` o similar
