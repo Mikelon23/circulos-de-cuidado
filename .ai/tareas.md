@@ -40,7 +40,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  14 | Crear modelo `MiembroCirculo`                   | CRUD completo                  | completado  |
 |  15 | Crear modelo `Sesion`                           | CRUD completo                  | completado  |
 |  16 | Crear modelo `CheckInEmocional`                 | CRUD + historial               | completado  |
-|  17 | Crear modelo `Facilitador`                      | CRUD completo                  | pendiente  |
+|  17 | Crear modelo `Facilitador`                      | CRUD completo                  | completado  |
 |  18 | Implementar seeders de desarrollo               | `npm run seed` o similar       | pendiente  |
 |  19 | Implementar registro de usuarios                | Endpoint funcional             | pendiente  |
 |  20 | Implementar login y JWT                         | Middleware de auth             | pendiente  |
@@ -251,7 +251,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 17
 
 - id: 17
-- estado: pendiente
+- estado: completado
 - titulo: Crear modelo `Facilitador`
 - objetivo: Perfil de ex-cuidador, formación, especialidades, calificación, disponibilidad
 - entregable: CRUD completo
