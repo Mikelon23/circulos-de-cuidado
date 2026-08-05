@@ -4,6 +4,7 @@ import { createUserService } from './users.cjs';
 import { createCaregiverProfileService } from './caregiver-profiles.cjs';
 import { createCircleService } from './circles.cjs';
 import { createCircleMemberService } from './circle-members.cjs';
+import { createFacilitatorService } from './facilitators.cjs';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -11,6 +12,7 @@ const userService = createUserService();
 const caregiverProfileService = createCaregiverProfileService();
 const circleService = createCircleService();
 const circleMemberService = createCircleMemberService();
+const facilitatorService = createFacilitatorService();
 
 app.use(express.json());
 
@@ -154,6 +156,46 @@ app.patch('/api/v1/circle-members/:id', (req, res) => {
 app.delete('/api/v1/circle-members/:id', (req, res) => {
   try {
     const deleted = circleMemberService.deleteMember(req.params.id);
+    res.json({ data: deleted });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/facilitators', (req, res) => {
+  try {
+    const created = facilitatorService.createFacilitator(req.body || {});
+    res.status(201).json({ data: created });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/facilitators', (_req, res) => {
+  res.json({ data: facilitatorService.listFacilitators() });
+});
+
+app.get('/api/v1/facilitators/:id', (req, res) => {
+  try {
+    const facilitator = facilitatorService.getFacilitator(req.params.id);
+    res.json({ data: facilitator });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/facilitators/:id', (req, res) => {
+  try {
+    const updated = facilitatorService.updateFacilitator(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/facilitators/:id', (req, res) => {
+  try {
+    const deleted = facilitatorService.deleteFacilitator(req.params.id);
     res.json({ data: deleted });
   } catch (error) {
     res.status(404).json({ error: error.message });
