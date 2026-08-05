@@ -38,8 +38,8 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  12 | Crear modelo `PerfilCuidador`                   | CRUD completo                  | completado  |
 |  13 | Crear modelo `Circulo`                          | CRUD completo                  | completado  |
 |  14 | Crear modelo `MiembroCirculo`                   | CRUD completo                  | completado  |
-|  15 | Crear modelo `Sesion`                           | CRUD completo                  | pendiente  |
-|  16 | Crear modelo `CheckInEmocional`                 | CRUD + historial               | pendiente  |
+|  15 | Crear modelo `Sesion`                           | CRUD completo                  | completado  |
+|  16 | Crear modelo `CheckInEmocional`                 | CRUD + historial               | completado  |
 |  17 | Crear modelo `Facilitador`                      | CRUD completo                  | pendiente  |
 |  18 | Implementar seeders de desarrollo               | `npm run seed` o similar       | pendiente  |
 |  19 | Implementar registro de usuarios                | Endpoint funcional             | pendiente  |
