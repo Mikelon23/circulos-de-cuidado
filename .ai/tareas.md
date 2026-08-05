@@ -41,7 +41,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  15 | Crear modelo `Sesion`                           | CRUD completo                  | completado  |
 |  16 | Crear modelo `CheckInEmocional`                 | CRUD + historial               | completado  |
 |  17 | Crear modelo `Facilitador`                      | CRUD completo                  | completado  |
-|  18 | Implementar seeders de desarrollo               | `npm run seed` o similar       | pendiente  |
+|  18 | Implementar seeders de desarrollo               | `npm run seed` o similar       | completado  |
 |  19 | Implementar registro de usuarios                | Endpoint funcional             | pendiente  |
 |  20 | Implementar login y JWT                         | Middleware de auth             | pendiente  |
 |  21 | Implementar OAuth (Google/GitHub)               | Botones + flujo completo       | pendiente  |
