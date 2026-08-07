@@ -114,6 +114,7 @@ Elegimos **React + Vite** por su simplicidad, velocidad de desarrollo y menor re
 
 - HTTPS obligatorio en producción.
 - Autenticación con **JWT** y token de refresh para renovar sesiones.
+- Configurar `JWT_SECRET` como secreto de entorno; el valor de desarrollo integrado no debe usarse en producción.
 - Contraseñas almacenadas con **bcryptjs** cost 12.
 - Datos sensibles cifrados con **AES-256** cuando correspondan a información privada almacenada.
 - **Helmet.js** para cabeceras de seguridad HTTP.

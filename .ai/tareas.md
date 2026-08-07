@@ -43,7 +43,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  17 | Crear modelo `Facilitador`                      | CRUD completo                  | completado  |
 |  18 | Implementar seeders de desarrollo               | `npm run seed` o similar       | completado  |
 |  19 | Implementar registro de usuarios                | Endpoint funcional             | completado |
-|  20 | Implementar login y JWT                         | Middleware de auth             | pendiente  |
+|  20 | Implementar login y JWT                         | Middleware de auth             | completado |
 |  21 | Implementar OAuth (Google/GitHub)               | Botones + flujo completo       | pendiente  |
 |  22 | Implementar recuperación de contraseña          | Flujo completo                 | pendiente  |
 |  23 | Implementar anonimato opcional                  | Perfil configurable            | pendiente  |
@@ -280,7 +280,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 20
 
 - id: 20
-- estado: pendiente
+- estado: completado
 - titulo: Implementar login y JWT
 - objetivo: Tokens de acceso y refresh, expiración, renovación automática
 - entregable: Middleware de auth
