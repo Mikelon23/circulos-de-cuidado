@@ -6,6 +6,7 @@ import { createCircleService } from './circles.cjs';
 import { createCircleMemberService } from './circle-members.cjs';
 import { createFacilitatorService } from './facilitators.cjs';
 import { createAuthService, requireAuth } from './auth.cjs';
+import { createOAuthService } from './oauth.cjs';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,6 +15,7 @@ const authService = createAuthService({
   findUserById: (id) => userService?.getUserById(id),
 });
 userService = createUserService({ authService });
+const oauthService = createOAuthService({ userService, authService });
 const caregiverProfileService = createCaregiverProfileService();
 const circleService = createCircleService();
 const circleMemberService = createCircleMemberService();
@@ -58,6 +60,40 @@ app.post('/api/v1/auth/refresh', (req, res) => {
     res.json({ data: tokens });
   } catch (error) {
     res.status(401).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/auth/:provider', (req, res) => {
+  try {
+    const baseUrl = process.env.API_PUBLIC_URL || `http://localhost:${port}`;
+    const redirectUri = `${baseUrl}/api/v1/auth/${req.params.provider}/callback`;
+    res.redirect(oauthService.begin(req.params.provider, redirectUri));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/auth/:provider/callback', async (req, res) => {
+  try {
+    const baseUrl = process.env.API_PUBLIC_URL || `http://localhost:${port}`;
+    const redirectUri = `${baseUrl}/api/v1/auth/${req.params.provider}/callback`;
+    const auth = await oauthService.complete(req.params.provider, {
+      code: req.query.code,
+      state: req.query.state,
+      redirectUri,
+    });
+    const webUrl = process.env.WEB_PUBLIC_URL || 'http://localhost:5173';
+    const frontendCallback = new URL('/oauth/callback', webUrl);
+    frontendCallback.hash = new URLSearchParams({
+      accessToken: auth.accessToken,
+      refreshToken: auth.refreshToken,
+    }).toString();
+    res.redirect(frontendCallback.toString());
+  } catch (error) {
+    const webUrl = process.env.WEB_PUBLIC_URL || 'http://localhost:5173';
+    const frontendCallback = new URL('/oauth/callback', webUrl);
+    frontendCallback.searchParams.set('error', error.message);
+    res.redirect(frontendCallback.toString());
   }
 });
 
