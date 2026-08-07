@@ -5,10 +5,15 @@ import { createCaregiverProfileService } from './caregiver-profiles.cjs';
 import { createCircleService } from './circles.cjs';
 import { createCircleMemberService } from './circle-members.cjs';
 import { createFacilitatorService } from './facilitators.cjs';
+import { createAuthService, requireAuth } from './auth.cjs';
 
 const app = express();
 const port = process.env.PORT || 3000;
-const userService = createUserService();
+let userService;
+const authService = createAuthService({
+  findUserById: (id) => userService?.getUserById(id),
+});
+userService = createUserService({ authService });
 const caregiverProfileService = createCaregiverProfileService();
 const circleService = createCircleService();
 const circleMemberService = createCircleMemberService();
@@ -45,6 +50,25 @@ app.post('/api/v1/users/login', (req, res) => {
   } catch (error) {
     res.status(401).json({ error: error.message });
   }
+});
+
+app.post('/api/v1/auth/refresh', (req, res) => {
+  try {
+    const tokens = authService.refreshTokens(req.body?.refreshToken);
+    res.json({ data: tokens });
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/users/me', requireAuth(authService), (req, res) => {
+  const user = userService.getUserById(req.auth.sub);
+
+  if (!user) {
+    return res.status(401).json({ error: 'El usuario no existe' });
+  }
+
+  return res.json({ data: user });
 });
 
 app.get('/api/v1/users', (_req, res) => {

@@ -1,11 +1,14 @@
 const crypto = require('node:crypto');
+const { createAuthService } = require('./auth.cjs');
 
 const VALID_ROLES = new Set(['cuidador', 'facilitador', 'admin']);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 
 function normalizeEmail(email) {
-  return String(email ?? '').trim().toLowerCase();
+  return String(email ?? '')
+    .trim()
+    .toLowerCase();
 }
 
 function verifyPassword(password, passwordHash) {
@@ -18,9 +21,7 @@ function verifyPassword(password, passwordHash) {
     return false;
   }
 
-  const candidateHash = crypto
-    .pbkdf2Sync(password, salt, 100_000, 64, 'sha512')
-    .toString('hex');
+  const candidateHash = crypto.pbkdf2Sync(password, salt, 100_000, 64, 'sha512').toString('hex');
 
   return crypto.timingSafeEqual(
     Buffer.from(candidateHash, 'hex'),
@@ -30,21 +31,13 @@ function verifyPassword(password, passwordHash) {
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto
-    .pbkdf2Sync(password, salt, 100_000, 64, 'sha512')
-    .toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 100_000, 64, 'sha512').toString('hex');
 
   return `${salt}:${hash}`;
 }
 
 function sanitizeUser(user) {
-  const {
-    passwordHash,
-    emailVerificationToken,
-    createdAt,
-    updatedAt,
-    ...safeUser
-  } = user;
+  const { passwordHash, emailVerificationToken, createdAt, updatedAt, ...safeUser } = user;
 
   return {
     ...safeUser,
@@ -53,14 +46,16 @@ function sanitizeUser(user) {
   };
 }
 
-function createUserService() {
+function createUserService({ authService = createAuthService() } = {}) {
   const users = [];
 
   return {
     registerUser(payload = {}) {
       const email = normalizeEmail(payload.email);
       const role = String(payload.role || 'cuidador').toLowerCase();
-      const oauthProvider = payload.oauthProvider ? String(payload.oauthProvider).toLowerCase() : null;
+      const oauthProvider = payload.oauthProvider
+        ? String(payload.oauthProvider).toLowerCase()
+        : null;
       const oauthId = payload.oauthId ? String(payload.oauthId) : null;
       const password = typeof payload.password === 'string' ? payload.password : '';
       const passwordConfirmation = payload.passwordConfirmation ?? payload.confirmPassword;
@@ -180,11 +175,15 @@ function createUserService() {
         if (!password && user.oauthProvider) {
           return {
             user: sanitizeUser(user),
-            token: `oauth-${crypto.randomUUID()}`,
+            ...authService.issueTokens(user),
           };
         }
 
         throw new Error('Este usuario usa autenticación OAuth');
+      }
+
+      if (!user.emailVerificado) {
+        throw new Error('El email no está verificado');
       }
 
       if (!password || !verifyPassword(password, user.passwordHash)) {
@@ -193,8 +192,13 @@ function createUserService() {
 
       return {
         user: sanitizeUser(user),
-        token: `session-${crypto.randomUUID()}`,
+        ...authService.issueTokens(user),
       };
+    },
+
+    getUserById(id) {
+      const user = users.find((candidate) => candidate.id === id);
+      return user ? sanitizeUser(user) : null;
     },
 
     listUsers() {
