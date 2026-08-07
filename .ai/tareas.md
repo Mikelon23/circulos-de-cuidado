@@ -42,7 +42,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  16 | Crear modelo `CheckInEmocional`                 | CRUD + historial               | completado  |
 |  17 | Crear modelo `Facilitador`                      | CRUD completo                  | completado  |
 |  18 | Implementar seeders de desarrollo               | `npm run seed` o similar       | completado  |
-|  19 | Implementar registro de usuarios                | Endpoint funcional             | pendiente  |
+|  19 | Implementar registro de usuarios                | Endpoint funcional             | completado |
 |  20 | Implementar login y JWT                         | Middleware de auth             | pendiente  |
 |  21 | Implementar OAuth (Google/GitHub)               | Botones + flujo completo       | pendiente  |
 |  22 | Implementar recuperación de contraseña          | Flujo completo                 | pendiente  |
@@ -271,7 +271,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 19
 
 - id: 19
-- estado: pendiente
+- estado: completado
 - titulo: Implementar registro de usuarios
 - objetivo: Email + contraseña con validación, confirmación por email (SendGrid free o SMTP propio)
 - entregable: Endpoint funcional

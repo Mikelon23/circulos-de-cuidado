@@ -1,6 +1,8 @@
 const crypto = require('node:crypto');
 
 const VALID_ROLES = new Set(['cuidador', 'facilitador', 'admin']);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 8;
 
 function normalizeEmail(email) {
   return String(email ?? '').trim().toLowerCase();
@@ -38,6 +40,7 @@ function hashPassword(password) {
 function sanitizeUser(user) {
   const {
     passwordHash,
+    emailVerificationToken,
     createdAt,
     updatedAt,
     ...safeUser
@@ -60,9 +63,14 @@ function createUserService() {
       const oauthProvider = payload.oauthProvider ? String(payload.oauthProvider).toLowerCase() : null;
       const oauthId = payload.oauthId ? String(payload.oauthId) : null;
       const password = typeof payload.password === 'string' ? payload.password : '';
+      const passwordConfirmation = payload.passwordConfirmation ?? payload.confirmPassword;
 
       if (!email) {
         throw new Error('El email es obligatorio');
+      }
+
+      if (email.length > 255 || !EMAIL_PATTERN.test(email)) {
+        throw new Error('El email no es válido');
       }
 
       if (!VALID_ROLES.has(role)) {
@@ -98,6 +106,14 @@ function createUserService() {
         throw new Error('La contraseña es obligatoria para registros locales');
       }
 
+      if (password.length < MIN_PASSWORD_LENGTH) {
+        throw new Error(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
+      }
+
+      if (passwordConfirmation !== undefined && password !== passwordConfirmation) {
+        throw new Error('Las contraseñas no coinciden');
+      }
+
       const created = {
         id: crypto.randomUUID(),
         email,
@@ -110,12 +126,41 @@ function createUserService() {
         oauthProvider: 'local',
         oauthId: null,
         passwordHash: hashPassword(password),
+        emailVerificationToken: payload.emailVerified
+          ? null
+          : crypto.randomBytes(32).toString('hex'),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
       users.push(created);
-      return sanitizeUser(created);
+      const safeUser = sanitizeUser(created);
+
+      if (created.emailVerificationToken) {
+        return {
+          ...safeUser,
+          verificationToken: created.emailVerificationToken,
+        };
+      }
+
+      return safeUser;
+    },
+
+    verifyEmail(token) {
+      if (typeof token !== 'string' || !token) {
+        throw new Error('El token de verificación es obligatorio');
+      }
+
+      const user = users.find((candidate) => candidate.emailVerificationToken === token);
+      if (!user) {
+        throw new Error('El token de verificación no es válido');
+      }
+
+      user.emailVerificado = true;
+      user.emailVerificationToken = null;
+      user.updatedAt = new Date().toISOString();
+
+      return sanitizeUser(user);
     },
 
     loginUser(payload = {}) {

@@ -29,6 +29,15 @@ app.post('/api/v1/users/register', (req, res) => {
   }
 });
 
+app.post('/api/v1/users/verify-email', (req, res) => {
+  try {
+    const verified = userService.verifyEmail(req.body?.token);
+    res.json({ data: verified });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.post('/api/v1/users/login', (req, res) => {
   try {
     const auth = userService.loginUser(req.body || {});
