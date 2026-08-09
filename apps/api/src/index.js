@@ -45,6 +45,28 @@ app.post('/api/v1/users/verify-email', (req, res) => {
   }
 });
 
+app.post('/api/v1/users/forgot-password', (req, res) => {
+  try {
+    const result = userService.requestPasswordReset(req.body?.email);
+    res.json({ data: { message: result.message } });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/users/reset-password', (req, res) => {
+  try {
+    const user = userService.resetPassword(
+      req.body?.token,
+      req.body?.password,
+      req.body?.passwordConfirmation ?? req.body?.confirmPassword
+    );
+    res.json({ data: { user } });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.post('/api/v1/users/login', (req, res) => {
   try {
     const auth = userService.loginUser(req.body || {});

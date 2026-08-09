@@ -4,6 +4,7 @@ const { createAuthService } = require('./auth.cjs');
 const VALID_ROLES = new Set(['cuidador', 'facilitador', 'admin']);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 function normalizeEmail(email) {
   return String(email ?? '')
@@ -36,6 +37,10 @@ function hashPassword(password) {
   return `${salt}:${hash}`;
 }
 
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 function sanitizeUser(user) {
   const { passwordHash, emailVerificationToken, createdAt, updatedAt, ...safeUser } = user;
 
@@ -46,8 +51,14 @@ function sanitizeUser(user) {
   };
 }
 
-function createUserService({ authService = createAuthService() } = {}) {
+function createUserService({
+  authService = createAuthService(),
+  sendPasswordResetEmail = () => {},
+  now = () => Date.now(),
+  passwordResetTtlMs = PASSWORD_RESET_TTL_MS,
+} = {}) {
   const users = [];
+  const passwordResetTokens = new Map();
 
   return {
     registerUser(payload = {}) {
@@ -155,6 +166,67 @@ function createUserService({ authService = createAuthService() } = {}) {
       user.emailVerificationToken = null;
       user.updatedAt = new Date().toISOString();
 
+      return sanitizeUser(user);
+    },
+
+    requestPasswordReset(email) {
+      const normalizedEmail = normalizeEmail(email);
+      const user = users.find(
+        (candidate) => candidate.email === normalizedEmail && candidate.oauthProvider === 'local'
+      );
+
+      if (!user) {
+        return {
+          message: 'Si el email existe, recibirás instrucciones para recuperar tu contraseña',
+        };
+      }
+
+      const token = crypto.randomBytes(32).toString('hex');
+      passwordResetTokens.set(hashResetToken(token), {
+        userId: user.id,
+        expiresAt: now() + passwordResetTtlMs,
+      });
+
+      sendPasswordResetEmail({
+        email: user.email,
+        token,
+        expiresAt: now() + passwordResetTtlMs,
+      });
+
+      return {
+        message: 'Si el email existe, recibirás instrucciones para recuperar tu contraseña',
+        resetToken: token,
+      };
+    },
+
+    resetPassword(token, password, passwordConfirmation) {
+      if (typeof token !== 'string' || !token) {
+        throw new Error('El token de recuperación es obligatorio');
+      }
+
+      if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+        throw new Error(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
+      }
+
+      if (passwordConfirmation !== undefined && password !== passwordConfirmation) {
+        throw new Error('Las contraseñas no coinciden');
+      }
+
+      const tokenHash = hashResetToken(token);
+      const resetRequest = passwordResetTokens.get(tokenHash);
+      passwordResetTokens.delete(tokenHash);
+
+      if (!resetRequest || resetRequest.expiresAt <= now()) {
+        throw new Error('El token de recuperación no es válido o ha expirado');
+      }
+
+      const user = users.find((candidate) => candidate.id === resetRequest.userId);
+      if (!user || user.oauthProvider !== 'local') {
+        throw new Error('El token de recuperación no es válido o ha expirado');
+      }
+
+      user.passwordHash = hashPassword(password);
+      user.updatedAt = new Date(now()).toISOString();
       return sanitizeUser(user);
     },
 

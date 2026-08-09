@@ -95,6 +95,53 @@ test('createUserService bloquea login local hasta verificar el email', () => {
   );
 });
 
+test('createUserService recupera la contraseña con un token temporal de un solo uso', () => {
+  let currentTime = 1_000_000;
+  let emailPayload;
+  const service = createUserService({
+    now: () => currentTime,
+    sendPasswordResetEmail: (payload) => {
+      emailPayload = payload;
+    },
+  });
+  const user = service.registerUser({
+    email: 'recuperacion@example.com',
+    password: 'secret123',
+    emailVerified: true,
+  });
+
+  const request = service.requestPasswordReset(user.email);
+  assert.equal(
+    request.message,
+    'Si el email existe, recibirás instrucciones para recuperar tu contraseña'
+  );
+  assert.ok(emailPayload.token);
+  assert.equal(emailPayload.email, user.email);
+
+  const updated = service.resetPassword(emailPayload.token, 'newsecret123', 'newsecret123');
+  assert.equal(updated.email, user.email);
+  assert.throws(
+    () => service.loginUser({ email: user.email, password: 'secret123' }),
+    /Credenciales inválidas/
+  );
+  assert.equal(
+    service.loginUser({ email: user.email, password: 'newsecret123' }).user.email,
+    user.email
+  );
+  assert.throws(
+    () => service.resetPassword(emailPayload.token, 'another123'),
+    /no es válido o ha expirado/
+  );
+
+  const secondRequest = service.requestPasswordReset(user.email);
+  currentTime += 60 * 60 * 1000;
+  assert.throws(
+    () => service.resetPassword(emailPayload.token, 'expired123'),
+    /no es válido o ha expirado/
+  );
+  assert.ok(secondRequest.resetToken);
+});
+
 test('createAuthService verifica, rota y expira refresh tokens', () => {
   let userService;
   const authService = createAuthService({
