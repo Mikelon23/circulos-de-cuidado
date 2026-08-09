@@ -201,6 +201,19 @@ function createUserService({ authService = createAuthService() } = {}) {
       return user ? sanitizeUser(user) : null;
     },
 
+    getUserByEmail(email) {
+      const normalizedEmail = normalizeEmail(email);
+      const user = users.find((candidate) => candidate.email === normalizedEmail);
+      return user ? sanitizeUser(user) : null;
+    },
+
+    getUserByOAuth(provider, providerId) {
+      const user = users.find(
+        (candidate) => candidate.oauthProvider === provider && candidate.oauthId === providerId
+      );
+      return user ? sanitizeUser(user) : null;
+    },
+
     listUsers() {
       return users.map((user) => sanitizeUser(user));
     },

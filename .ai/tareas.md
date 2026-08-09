@@ -44,7 +44,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  18 | Implementar seeders de desarrollo               | `npm run seed` o similar       | completado  |
 |  19 | Implementar registro de usuarios                | Endpoint funcional             | completado |
 |  20 | Implementar login y JWT                         | Middleware de auth             | completado |
-|  21 | Implementar OAuth (Google/GitHub)               | Botones + flujo completo       | pendiente  |
+|  21 | Implementar OAuth (Google/GitHub)               | Botones + flujo completo       | completado |
 |  22 | Implementar recuperación de contraseña          | Flujo completo                 | pendiente  |
 |  23 | Implementar anonimato opcional                  | Perfil configurable            | pendiente  |
 |  24 | Configurar CORS y rate limiting                 | Middleware activo              | pendiente  |
@@ -289,7 +289,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 21
 
 - id: 21
-- estado: pendiente
+- estado: completado
 - titulo: Implementar OAuth (Google/GitHub)
 - objetivo: Login social para reducir fricción de registro
 - entregable: Botones + flujo completo
