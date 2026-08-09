@@ -45,7 +45,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  19 | Implementar registro de usuarios                | Endpoint funcional             | completado |
 |  20 | Implementar login y JWT                         | Middleware de auth             | completado |
 |  21 | Implementar OAuth (Google/GitHub)               | Botones + flujo completo       | completado |
-|  22 | Implementar recuperación de contraseña          | Flujo completo                 | pendiente  |
+|  22 | Implementar recuperación de contraseña          | Flujo completo                 | completado  |
 |  23 | Implementar anonimato opcional                  | Perfil configurable            | pendiente  |
 |  24 | Configurar CORS y rate limiting                 | Middleware activo              | pendiente  |
 |  25 | Implementar sanitización de inputs              | Tests de seguridad             | pendiente  |
