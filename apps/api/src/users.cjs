@@ -41,8 +41,26 @@ function hashResetToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-function sanitizeUser(user) {
+function createDefaultAvatarUrl(userId) {
+  return `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(userId)}`;
+}
+
+function sanitizeUser(user, { publicProfile = false } = {}) {
   const { passwordHash, emailVerificationToken, createdAt, updatedAt, ...safeUser } = user;
+
+  if (publicProfile) {
+    return {
+      id: safeUser.id,
+      nombreVisible: safeUser.anonimo
+        ? 'Cuidador anónimo'
+        : safeUser.nombreVisible || safeUser.nombreReal || 'Cuidador',
+      avatarUrl: safeUser.avatarUrl,
+      anonimo: safeUser.anonimo,
+      rol: safeUser.rol,
+      createdAt,
+      updatedAt,
+    };
+  }
 
   return {
     ...safeUser,
@@ -88,12 +106,13 @@ function createUserService({
       }
 
       if (oauthProvider && oauthId) {
+        const id = crypto.randomUUID();
         const created = {
-          id: crypto.randomUUID(),
+          id,
           email,
           nombreReal: payload.nombreReal ?? null,
           nombreVisible: payload.nombreVisible ?? null,
-          avatarUrl: payload.avatarUrl ?? null,
+          avatarUrl: payload.avatarUrl ?? createDefaultAvatarUrl(id),
           rol: role,
           emailVerificado: payload.emailVerified ?? true,
           anonimo: payload.anonimo ?? false,
@@ -120,12 +139,13 @@ function createUserService({
         throw new Error('Las contraseñas no coinciden');
       }
 
+      const id = crypto.randomUUID();
       const created = {
-        id: crypto.randomUUID(),
+        id,
         email,
         nombreReal: payload.nombreReal ?? null,
         nombreVisible: payload.nombreVisible ?? null,
-        avatarUrl: payload.avatarUrl ?? null,
+        avatarUrl: payload.avatarUrl ?? createDefaultAvatarUrl(id),
         rol: role,
         emailVerificado: payload.emailVerified ?? false,
         anonimo: payload.anonimo ?? false,
@@ -286,8 +306,44 @@ function createUserService({
       return user ? sanitizeUser(user) : null;
     },
 
+    updateUserProfile(id, updates = {}) {
+      const user = users.find((candidate) => candidate.id === id);
+      if (!user) {
+        throw new Error('Usuario no encontrado');
+      }
+
+      if (updates.nombreVisible !== undefined) {
+        if (updates.nombreVisible !== null && typeof updates.nombreVisible !== 'string') {
+          throw new Error('El nombre visible no es válido');
+        }
+
+        const nombreVisible = updates.nombreVisible?.trim() || null;
+        if (nombreVisible && nombreVisible.length > 255) {
+          throw new Error('El nombre visible no puede superar 255 caracteres');
+        }
+        user.nombreVisible = nombreVisible;
+      }
+
+      if (updates.anonimo !== undefined) {
+        if (typeof updates.anonimo !== 'boolean') {
+          throw new Error('La configuración de anonimato no es válida');
+        }
+        user.anonimo = updates.anonimo;
+      }
+
+      if (updates.avatarUrl !== undefined) {
+        if (updates.avatarUrl !== null && typeof updates.avatarUrl !== 'string') {
+          throw new Error('El avatar no es válido');
+        }
+        user.avatarUrl = updates.avatarUrl?.trim() || createDefaultAvatarUrl(user.id);
+      }
+
+      user.updatedAt = new Date().toISOString();
+      return sanitizeUser(user);
+    },
+
     listUsers() {
-      return users.map((user) => sanitizeUser(user));
+      return users.map((user) => sanitizeUser(user, { publicProfile: true }));
     },
   };
 }

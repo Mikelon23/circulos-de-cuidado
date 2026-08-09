@@ -307,7 +307,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 23
 
 - id: 23
-- estado: pendiente
+- estado: completado
 - titulo: Implementar anonimato opcional
 - objetivo: Campo `nombre_visible` separado de `nombre_real`, avatar generado automático
 - entregable: Perfil configurable
