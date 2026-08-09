@@ -129,6 +129,15 @@ app.get('/api/v1/users/me', requireAuth(authService), (req, res) => {
   return res.json({ data: user });
 });
 
+app.patch('/api/v1/users/me/profile', requireAuth(authService), (req, res) => {
+  try {
+    const profile = userService.updateUserProfile(req.auth.sub, req.body || {});
+    return res.json({ data: profile });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
 app.get('/api/v1/users', (_req, res) => {
   res.json({ data: userService.listUsers() });
 });

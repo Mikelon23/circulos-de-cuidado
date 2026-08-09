@@ -47,6 +47,48 @@ test('createUserService soporta registro OAuth con proveedor externo', () => {
   assert.equal(created.emailVerificado, true);
 });
 
+test('createUserService genera avatar y permite configurar anonimato', () => {
+  const service = createUserService();
+  const created = service.registerUser({
+    email: 'perfil@example.com',
+    password: 'secret123',
+    emailVerified: true,
+    nombreReal: 'Nombre privado',
+    nombreVisible: 'Nombre público',
+  });
+
+  assert.match(created.avatarUrl, /^https:\/\/api\.dicebear\.com\/9\.x\/identicon\/svg\?seed=/);
+
+  const updated = service.updateUserProfile(created.id, {
+    nombreVisible: 'Cuidador visible',
+    anonimo: true,
+  });
+
+  assert.equal(updated.nombreVisible, 'Cuidador visible');
+  assert.equal(updated.anonimo, true);
+  assert.equal(service.listUsers()[0].nombreVisible, 'Cuidador anónimo');
+  assert.equal(service.listUsers()[0].email, undefined);
+  assert.equal(service.getUserById(created.id).nombreReal, 'Nombre privado');
+});
+
+test('createUserService valida los campos configurables del perfil', () => {
+  const service = createUserService();
+  const created = service.registerUser({
+    email: 'perfil-valido@example.com',
+    password: 'secret123',
+    emailVerified: true,
+  });
+
+  assert.throws(
+    () => service.updateUserProfile(created.id, { anonimo: 'true' }),
+    /configuración de anonimato no es válida/
+  );
+  assert.throws(
+    () => service.updateUserProfile(created.id, { nombreVisible: 'x'.repeat(256) }),
+    /no puede superar 255 caracteres/
+  );
+});
+
 test('createUserService valida el email y la contraseña local', () => {
   const service = createUserService();
 
