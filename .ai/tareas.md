@@ -298,7 +298,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 22
 
 - id: 22
-- estado: pendiente
+- estado: completado
 - titulo: Implementar recuperación de contraseña
 - objetivo: Email con token temporal de 1 hora
 - entregable: Flujo completo
