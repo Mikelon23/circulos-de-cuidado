@@ -124,6 +124,12 @@ Elegimos **React + Vite** por su simplicidad, velocidad de desarrollo y menor re
 - Uso de **Prisma** para proteger contra SQL injection.
 - **CSP** robusta para reducir riesgos de XSS.
 
+La API aplica CORS antes de las rutas usando `CORS_ORIGINS` como lista separada por comas
+(por defecto, `http://localhost:5173`). También aplica un límite en memoria por IP para
+proteger las rutas HTTP: `RATE_LIMIT_WINDOW_MS` define la ventana en milisegundos y
+`RATE_LIMIT_MAX` el número máximo de solicitudes por ventana. En producción, el límite debe
+migrarse a Redis cuando existan varias instancias del backend.
+
 ## 7. Escalabilidad futura
 
 | Escenario                 | Cambio necesario                                            | Estimación costo cero                             | Nota                                                  |

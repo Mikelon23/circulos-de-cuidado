@@ -316,7 +316,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 24
 
 - id: 24
-- estado: pendiente
+- estado: completado
 - titulo: Configurar CORS y rate limiting
 - objetivo: Protección básica contra abuso de API
 - entregable: Middleware activo
