@@ -7,7 +7,11 @@ import { createCircleMemberService } from './circle-members.cjs';
 import { createFacilitatorService } from './facilitators.cjs';
 import { createAuthService, requireAuth } from './auth.cjs';
 import { createOAuthService } from './oauth.cjs';
-import { createCorsMiddleware, createRateLimitMiddleware } from './security.cjs';
+import {
+  createCorsMiddleware,
+  createInputSanitizationMiddleware,
+  createRateLimitMiddleware,
+} from './security.cjs';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -24,7 +28,8 @@ const facilitatorService = createFacilitatorService();
 
 app.use(createCorsMiddleware());
 app.use(createRateLimitMiddleware());
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
+app.use(createInputSanitizationMiddleware());
 
 app.get('/health', (_req, res) => {
   res.json(createHealthCheck('api'));

@@ -325,7 +325,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 25
 
 - id: 25
-- estado: pendiente
+- estado: completado
 - titulo: Implementar sanitización de inputs
 - objetivo: Prevención XSS, SQL injection, validación de todos los endpoints
 - entregable: Tests de seguridad

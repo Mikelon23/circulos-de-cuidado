@@ -1,6 +1,17 @@
 const DEFAULT_CORS_ORIGIN = 'http://localhost:5173';
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const DEFAULT_RATE_LIMIT_MAX = 100;
+const DEFAULT_INPUT_MAX_DEPTH = 8;
+const DEFAULT_INPUT_MAX_KEYS = 100;
+const DEFAULT_INPUT_MAX_STRING_LENGTH = 10_000;
+const SENSITIVE_INPUT_KEYS = new Set([
+  'password',
+  'passwordConfirmation',
+  'confirmPassword',
+  'token',
+  'refreshToken',
+  'oauthId',
+]);
 
 function resolveAllowedOrigins(configuredOrigins = process.env.CORS_ORIGINS) {
   const origins = Array.isArray(configuredOrigins)
@@ -86,7 +97,94 @@ function createRateLimitMiddleware({
   };
 }
 
+function sanitizeString(value, key) {
+  if (SENSITIVE_INPUT_KEYS.has(key)) {
+    return value;
+  }
+
+  return value
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\b(?:javascript|vbscript|data):/gi, '')
+    .trim();
+}
+
+function sanitizeValue(value, options, key = '') {
+  const { depth, maxDepth, keys, maxKeys, maxStringLength } = options;
+
+  if (depth > maxDepth) {
+    throw new Error('El cuerpo de la solicitud es demasiado profundo');
+  }
+
+  if (typeof value === 'string') {
+    if (value.length > maxStringLength) {
+      throw new Error('El cuerpo de la solicitud contiene un texto demasiado largo');
+    }
+    return sanitizeString(value, key);
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length > maxKeys) {
+      throw new Error('El cuerpo de la solicitud contiene demasiados elementos');
+    }
+    return value.map((item) => sanitizeValue(item, { ...options, depth: depth + 1 }, key));
+  }
+
+  if (value && typeof value === 'object') {
+    const sanitized = {};
+    for (const [childKey, childValue] of Object.entries(value)) {
+      if (childKey === '__proto__' || childKey === 'constructor' || childKey === 'prototype') {
+        continue;
+      }
+      if (keys >= maxKeys) {
+        throw new Error('El cuerpo de la solicitud contiene demasiados campos');
+      }
+      sanitized[childKey] = sanitizeValue(
+        childValue,
+        {
+          ...options,
+          depth: depth + 1,
+          keys: keys + 1,
+        },
+        childKey
+      );
+    }
+    return sanitized;
+  }
+
+  return value;
+}
+
+function createInputSanitizationMiddleware({
+  maxDepth = DEFAULT_INPUT_MAX_DEPTH,
+  maxKeys = DEFAULT_INPUT_MAX_KEYS,
+  maxStringLength = DEFAULT_INPUT_MAX_STRING_LENGTH,
+} = {}) {
+  return (req, res, next) => {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      if (req.body === undefined) {
+        return next();
+      }
+      return res.status(400).json({ error: 'El cuerpo de la solicitud debe ser un objeto' });
+    }
+
+    try {
+      req.body = sanitizeValue(req.body, {
+        depth: 0,
+        maxDepth,
+        keys: 0,
+        maxKeys,
+        maxStringLength,
+      });
+      return next();
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  };
+}
+
 module.exports = {
   createCorsMiddleware,
+  createInputSanitizationMiddleware,
   createRateLimitMiddleware,
 };

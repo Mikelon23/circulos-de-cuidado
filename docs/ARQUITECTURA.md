@@ -130,6 +130,11 @@ proteger las rutas HTTP: `RATE_LIMIT_WINDOW_MS` define la ventana en milisegundo
 `RATE_LIMIT_MAX` el número máximo de solicitudes por ventana. En producción, el límite debe
 migrarse a Redis cuando existan varias instancias del backend.
 
+Los cuerpos JSON tienen un límite de `100kb` y pasan por un middleware de sanitización que
+elimina etiquetas HTML, protocolos ejecutables y claves de prototype pollution. Los campos de
+credenciales y tokens se conservan sin transformar para no alterar su semántica criptográfica;
+la validación de formato y autorización permanece a cargo de cada endpoint.
+
 ## 7. Escalabilidad futura
 
 | Escenario                 | Cambio necesario                                            | Estimación costo cero                             | Nota                                                  |

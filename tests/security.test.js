@@ -1,6 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createCorsMiddleware, createRateLimitMiddleware } = require('../apps/api/src/security.cjs');
+const {
+  createCorsMiddleware,
+  createInputSanitizationMiddleware,
+  createRateLimitMiddleware,
+} = require('../apps/api/src/security.cjs');
 
 function createResponse() {
   return {
@@ -99,4 +103,47 @@ test('createRateLimitMiddleware no limita health checks ni preflight', () => {
 
   assert.equal(healthResponse.statusCode, 200);
   assert.equal(optionsResponse.statusCode, 200);
+});
+
+test('createInputSanitizationMiddleware elimina XSS y claves de prototype pollution', () => {
+  const middleware = createInputSanitizationMiddleware();
+  const request = {
+    body: JSON.parse(
+      '{"nombre":"<script>alert(1)</script> Cuidador","url":"javascript:alert(1)","__proto__":{"admin":true}}'
+    ),
+  };
+  const response = createResponse();
+  let nextCalled = false;
+
+  middleware(request, response, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(nextCalled, true);
+  assert.equal(request.body.nombre, 'alert(1) Cuidador');
+  assert.equal(request.body.url, 'alert(1)');
+  assert.equal(Object.hasOwn(request.body, '__proto__'), false);
+  assert.equal({}.admin, undefined);
+});
+
+test('createInputSanitizationMiddleware conserva credenciales y rechaza cuerpos inválidos', () => {
+  const middleware = createInputSanitizationMiddleware({ maxDepth: 1 });
+  const request = {
+    body: {
+      password: '<secret>&value',
+      token: 'javascript:token',
+      nested: { value: 'too deep' },
+    },
+  };
+  const response = createResponse();
+
+  middleware(request, response, () => assert.fail('No debe aceptar un cuerpo demasiado profundo'));
+
+  assert.equal(response.statusCode, 400);
+  assert.match(response.body.error, /demasiado profundo/);
+
+  const invalidResponse = createResponse();
+  middleware({ body: [] }, invalidResponse, () => assert.fail('No debe aceptar un array raíz'));
+  assert.equal(invalidResponse.statusCode, 400);
+  assert.match(invalidResponse.body.error, /debe ser un objeto/);
 });
