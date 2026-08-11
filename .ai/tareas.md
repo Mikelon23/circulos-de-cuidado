@@ -48,7 +48,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  22 | Implementar recuperación de contraseña          | Flujo completo                 | completado  |
 |  23 | Implementar anonimato opcional                  | Perfil configurable            | completado  |
 |  24 | Configurar CORS y rate limiting                 | Middleware activo              | completado  |
-|  25 | Implementar sanitización de inputs              | Tests de seguridad             | pendiente  |
+|  25 | Implementar sanitización de inputs              | Tests de seguridad             | completado  |
 |  26 | Documentar política de privacidad               | `docs/PRIVACIDAD.md`           | pendiente  |
 |  27 | Definir algoritmo de matching                   | `docs/MATCHING.md`             | pendiente  |
 |  28 | Implementar scoring de compatibilidad           | Tests unitarios                | pendiente  |
