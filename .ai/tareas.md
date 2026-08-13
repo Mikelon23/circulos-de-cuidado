@@ -334,7 +334,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 26
 
 - id: 26
-- estado: pendiente
+- estado: completado
 - titulo: Documentar política de privacidad
 - objetivo: GDPR básico, anonimización de datos sensibles, derecho al olvido
 - entregable: `docs/PRIVACIDAD.md`
