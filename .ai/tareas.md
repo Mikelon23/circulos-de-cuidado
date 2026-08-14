@@ -51,7 +51,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  25 | Implementar sanitización de inputs              | Tests de seguridad             | completado  |
 |  26 | Documentar política de privacidad               | `docs/PRIVACIDAD.md`           | completado  |
 |  27 | Definir algoritmo de matching                   | `docs/MATCHING.md`             | completado |
-|  28 | Implementar scoring de compatibilidad           | Tests unitarios                | pendiente  |
+|  28 | Implementar scoring de compatibilidad           | Tests unitarios                | completado |
 |  29 | Implementar generación de círculos              | Endpoint + tests               | pendiente  |
 |  30 | Implementar cola de espera                      | Sistema de cola                | pendiente  |
 |  31 | Crear panel de administración de círculos       | Dashboard básico               | pendiente  |
@@ -354,7 +354,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 28
 
 - id: 28
-- estado: pendiente
+- estado: completado
 - titulo: Implementar scoring de compatibilidad
 - objetivo: Función que recibe dos perfiles y devuelve score 0-100
 - entregable: Tests unitarios
