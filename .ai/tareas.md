@@ -50,7 +50,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  24 | Configurar CORS y rate limiting                 | Middleware activo              | completado  |
 |  25 | Implementar sanitización de inputs              | Tests de seguridad             | completado  |
 |  26 | Documentar política de privacidad               | `docs/PRIVACIDAD.md`           | completado  |
-|  27 | Definir algoritmo de matching                   | `docs/MATCHING.md`             | pendiente  |
+|  27 | Definir algoritmo de matching                   | `docs/MATCHING.md`             | completado |
 |  28 | Implementar scoring de compatibilidad           | Tests unitarios                | pendiente  |
 |  29 | Implementar generación de círculos              | Endpoint + tests               | pendiente  |
 |  30 | Implementar cola de espera                      | Sistema de cola                | pendiente  |
@@ -345,7 +345,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 27
 
 - id: 27
-- estado: pendiente
+- estado: completado
 - titulo: Definir algoritmo de matching
 - objetivo: Puntuación basada en: enfermedad, fase, edad, geografía, disponibilidad horaria, idioma
 - entregable: `docs/MATCHING.md`
