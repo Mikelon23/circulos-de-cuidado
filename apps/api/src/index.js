@@ -8,6 +8,7 @@ import { createFacilitatorService } from './facilitators.cjs';
 import { createAuthService, requireAuth } from './auth.cjs';
 import { createOAuthService } from './oauth.cjs';
 import { generateCircles } from './matching.cjs';
+import { createWaitingQueueService } from './waiting-queue.cjs';
 import {
   createCorsMiddleware,
   createInputSanitizationMiddleware,
@@ -26,6 +27,7 @@ const caregiverProfileService = createCaregiverProfileService();
 const circleService = createCircleService();
 const circleMemberService = createCircleMemberService();
 const facilitatorService = createFacilitatorService();
+const waitingQueueService = createWaitingQueueService();
 
 app.use(createCorsMiddleware());
 app.use(createRateLimitMiddleware());
@@ -325,6 +327,121 @@ app.post('/api/v1/matching/generate-circles', (req, res) => {
 
     res.status(201).json({
       data: result,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Waiting Queue endpoints
+app.post('/api/v1/waiting-queue', (req, res) => {
+  try {
+    const entry = waitingQueueService.addToQueue(req.body || {});
+    res.status(201).json({ data: entry });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/waiting-queue', (req, res) => {
+  try {
+    const options = {
+      status: req.query.status,
+      sortBy: req.query.sortBy || 'urgencia',
+      order: req.query.order || 'desc',
+    };
+    const entries = waitingQueueService.listQueue(options);
+    res.json({ data: entries });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/waiting-queue/stats', (_req, res) => {
+  try {
+    const stats = waitingQueueService.getQueueStats();
+    res.json({ data: stats });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/waiting-queue/:id', (req, res) => {
+  try {
+    const entry = waitingQueueService.getQueueEntry(req.params.id);
+    res.json({ data: entry });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/waiting-queue/:id', (req, res) => {
+  try {
+    const updated = waitingQueueService.updateQueueEntry(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/waiting-queue/:id', (req, res) => {
+  try {
+    const removed = waitingQueueService.removeFromQueue(req.params.id);
+    res.json({ data: removed });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/waiting-queue/process', (req, res) => {
+  try {
+    const { config = {} } = req.body || {};
+    
+    // Get next candidates ready for matching
+    const nextLimit = req.body?.limit || 12;
+    const candidates = waitingQueueService.getNextCandidatesForMatching(nextLimit);
+
+    if (candidates.length < (config.minSize || 6)) {
+      return res.json({
+        data: {
+          message: 'No hay suficientes candidatos para generar círculos',
+          candidatesCount: candidates.length,
+          requiredCount: config.minSize || 6,
+          circlesGenerated: 0,
+          circles: [],
+          processed: [],
+        },
+      });
+    }
+
+    // Generate circles from candidates
+    const result = generateCircles(
+      candidates.map((c) => ({
+        id: c.cuidadorId,
+        ...c.perfilCuidador,
+        urgencia: c.urgencia,
+      })),
+      config
+    );
+
+    // Mark processed candidates as offered
+    const processedIds = result.circles
+      .flatMap((c) => c.members)
+      .map((m) => candidates.find((cand) => cand.cuidadorId === m.id)?.id)
+      .filter(Boolean);
+
+    if (processedIds.length > 0) {
+      waitingQueueService.markAsOffered(processedIds);
+    }
+
+    res.status(201).json({
+      data: {
+        circlesGenerated: result.circles.length,
+        circles: result.circles,
+        processedCount: processedIds.length,
+        waitlistCount: result.waitlist.length,
+        metrics: result.metrics,
+      },
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
