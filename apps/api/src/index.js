@@ -7,7 +7,8 @@ import { createCircleMemberService } from './circle-members.cjs';
 import { createFacilitatorService } from './facilitators.cjs';
 import { createAuthService, requireAuth } from './auth.cjs';
 import { createOAuthService } from './oauth.cjs';
-import { generateCircles } from './matching.cjs';
+import pkg from './matching.cjs';
+const { generateCircles } = pkg;
 import { createWaitingQueueService } from './waiting-queue.cjs';
 import {
   createCorsMiddleware,
