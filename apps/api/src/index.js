@@ -7,6 +7,7 @@ import { createCircleMemberService } from './circle-members.cjs';
 import { createFacilitatorService } from './facilitators.cjs';
 import { createAuthService, requireAuth } from './auth.cjs';
 import { createOAuthService } from './oauth.cjs';
+import { generateCircles } from './matching.cjs';
 import {
   createCorsMiddleware,
   createInputSanitizationMiddleware,
@@ -307,6 +308,26 @@ app.delete('/api/v1/facilitators/:id', (req, res) => {
     res.json({ data: deleted });
   } catch (error) {
     res.status(404).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/matching/generate-circles', (req, res) => {
+  try {
+    const { candidates = [], config = {} } = req.body || {};
+
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+      return res.status(400).json({
+        error: 'Se requiere un array de cuidadores candidatos (candidates)',
+      });
+    }
+
+    const result = generateCircles(candidates, config);
+
+    res.status(201).json({
+      data: result,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
