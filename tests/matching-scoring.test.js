@@ -8,6 +8,7 @@ const {
   scoreGeographyCompatibility,
   scoreAvailabilityCompatibility,
   scoreLanguageCompatibility,
+  generateCircles,
 } = require('../apps/api/src/matching.cjs');
 
 test('calculateCompatibilityScore devuelve un score válido entre 0 y 100', () => {
@@ -341,4 +342,386 @@ test('Perfiles idénticos deben tener score alto (97+)', () => {
   const score = calculateCompatibilityScore(profile, profile);
 
   assert.ok(score >= 95, `Score para perfil idéntico debe ser >= 95, recibió ${score}`);
+});
+
+// ============================================================================
+// Tests para generateCircles - Algoritmo de generación de círculos
+// ============================================================================
+
+test('generateCircles devuelve estructura correcta', () => {
+  const candidates = [
+    {
+      id: '1',
+      enfermedadPrincipal: 'Alzheimer',
+      faseCuidado: 'avanzado',
+      edad: 45,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '2',
+      enfermedadPrincipal: 'Demencia',
+      faseCuidado: 'avanzado',
+      edad: 48,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '3',
+      enfermedadPrincipal: 'Parkinson',
+      faseCuidado: 'intermedio',
+      edad: 55,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '4',
+      enfermedadPrincipal: 'ELA',
+      faseCuidado: 'avanzado',
+      edad: 50,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '5',
+      enfermedadPrincipal: 'Alzheimer',
+      faseCuidado: 'avanzado',
+      edad: 46,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '6',
+      enfermedadPrincipal: 'Demencia',
+      faseCuidado: 'avanzado',
+      edad: 49,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+  ];
+
+  const result = generateCircles(candidates);
+
+  assert.ok(result.circles !== undefined, 'Debe retornar circles');
+  assert.ok(result.waitlist !== undefined, 'Debe retornar waitlist');
+  assert.ok(result.metrics !== undefined, 'Debe retornar metrics');
+  assert.ok(Array.isArray(result.circles), 'circles debe ser un array');
+  assert.ok(Array.isArray(result.waitlist), 'waitlist debe ser un array');
+});
+
+test('generateCircles retorna array vacío si hay < minSize candidatos', () => {
+  const candidates = [
+    {
+      id: '1',
+      enfermedadPrincipal: 'Alzheimer',
+      faseCuidado: 'avanzado',
+      edad: 45,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '2',
+      enfermedadPrincipal: 'Demencia',
+      faseCuidado: 'avanzado',
+      edad: 48,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+  ];
+
+  const result = generateCircles(candidates, { minSize: 6 });
+
+  assert.equal(result.circles.length, 0, 'No debe generar círculos con < minSize candidatos');
+  assert.equal(result.waitlist.length, 2, 'Candidatos deben ir a waitlist');
+});
+
+test('generateCircles con array vacío retorna estructura vacía', () => {
+  const result = generateCircles([], {});
+
+  assert.equal(result.circles.length, 0);
+  assert.equal(result.waitlist.length, 0);
+  assert.equal(result.metrics.totalCandidates, 0);
+  assert.equal(result.metrics.circlesGenerated, 0);
+});
+
+test('generateCircles respeta capacidad máxima (maxSize)', () => {
+  const candidates = Array.from({ length: 20 }, (_, i) => ({
+    id: `user_${i}`,
+    enfermedadPrincipal: 'Alzheimer',
+    faseCuidado: 'avanzado',
+    edad: 45 + (i % 10),
+    ubicacion: 'Madrid',
+    disponibilidadHoraria: { monday: ['18:00-20:00'] },
+    idioma: 'es',
+  }));
+
+  const result = generateCircles(candidates, { maxSize: 8 });
+
+  for (const circle of result.circles) {
+    assert.ok(circle.members.length <= 8, `Círculo debe tener como máximo 8 miembros, tiene ${circle.members.length}`);
+  }
+});
+
+test('generateCircles respeta capacidad mínima (minSize)', () => {
+  const candidates = Array.from({ length: 15 }, (_, i) => ({
+    id: `user_${i}`,
+    enfermedadPrincipal: 'Alzheimer',
+    faseCuidado: 'avanzado',
+    edad: 45 + (i % 10),
+    ubicacion: 'Madrid',
+    disponibilidadHoraria: { monday: ['18:00-20:00'] },
+    idioma: 'es',
+  }));
+
+  const result = generateCircles(candidates, { minSize: 6 });
+
+  for (const circle of result.circles) {
+    assert.ok(circle.members.length >= 6, `Círculo debe tener como mínimo 6 miembros, tiene ${circle.members.length}`);
+  }
+});
+
+test('generateCircles respeta threshold de compatibilidad', () => {
+  const candidates = [
+    {
+      id: '1',
+      enfermedadPrincipal: 'Alzheimer',
+      faseCuidado: 'avanzado',
+      edad: 45,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '2',
+      enfermedadPrincipal: 'Diabetes',
+      faseCuidado: 'inicial',
+      edad: 70,
+      ubicacion: 'Barcelona',
+      disponibilidadHoraria: { wednesday: ['14:00-16:00'] },
+      idioma: 'en',
+    },
+    {
+      id: '3',
+      enfermedadPrincipal: 'Alzheimer',
+      faseCuidado: 'avanzado',
+      edad: 46,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '4',
+      enfermedadPrincipal: 'Demencia',
+      faseCuidado: 'avanzado',
+      edad: 48,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '5',
+      enfermedadPrincipal: 'Parkinson',
+      faseCuidado: 'avanzado',
+      edad: 50,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      id: '6',
+      enfermedadPrincipal: 'ELA',
+      faseCuidado: 'avanzado',
+      edad: 49,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+  ];
+
+  const result = generateCircles(candidates, { threshold: 80 });
+
+  // Con threshold alto, menos candidatos se agregarán a círculos
+  for (const circle of result.circles) {
+    assert.ok(circle.averageCompatibility >= 80, `Compatibilidad promedio debe ser >= 80`);
+  }
+});
+
+test('generateCircles con prioridad urgencia selecciona candidatos urgentes primero', () => {
+  const candidates = [
+    {
+      id: '1',
+      enfermedadPrincipal: 'Alzheimer',
+      faseCuidado: 'avanzado',
+      edad: 45,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+      urgencia: 3,
+    },
+    {
+      id: '2',
+      enfermedadPrincipal: 'Demencia',
+      faseCuidado: 'avanzado',
+      edad: 48,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+      urgencia: 9, // Muy urgente
+    },
+    {
+      id: '3',
+      enfermedadPrincipal: 'Parkinson',
+      faseCuidado: 'avanzado',
+      edad: 50,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+      urgencia: 8,
+    },
+    {
+      id: '4',
+      enfermedadPrincipal: 'ELA',
+      faseCuidado: 'avanzado',
+      edad: 49,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+      urgencia: 2,
+    },
+    {
+      id: '5',
+      enfermedadPrincipal: 'Alzheimer',
+      faseCuidado: 'avanzado',
+      edad: 46,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+      urgencia: 7,
+    },
+    {
+      id: '6',
+      enfermedadPrincipal: 'Diabetes',
+      faseCuidado: 'avanzado',
+      edad: 47,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+      urgencia: 8,
+    },
+  ];
+
+  const result = generateCircles(candidates, { priority: 'urgency' });
+
+  // Calcular tasa de asignación de urgentes
+  assert.ok(result.metrics.urgentAssignmentRate > 0, 'Con prioridad urgencia, se deben asignar usuarios urgentes');
+});
+
+test('generateCircles calcula metrics correctamente', () => {
+  const candidates = Array.from({ length: 12 }, (_, i) => ({
+    id: `user_${i}`,
+    enfermedadPrincipal: 'Alzheimer',
+    faseCuidado: 'avanzado',
+    edad: 45 + (i % 5),
+    ubicacion: 'Madrid',
+    disponibilidadHoraria: { monday: ['18:00-20:00'] },
+    idioma: 'es',
+  }));
+
+  const result = generateCircles(candidates, { minSize: 6, maxSize: 8 });
+
+  assert.equal(result.metrics.totalCandidates, 12, 'totalCandidates debe ser 12');
+  assert.ok(result.metrics.circlesGenerated >= 0, 'circlesGenerated debe ser >= 0');
+  assert.ok(result.metrics.averageCompatibility >= 0 && result.metrics.averageCompatibility <= 100, 'averageCompatibility debe estar entre 0-100');
+  assert.ok(result.metrics.assignmentRate >= 0 && result.metrics.assignmentRate <= 100, 'assignmentRate debe ser entre 0-100%');
+});
+
+test('generateCircles asigna IDs automáticamente si faltan', () => {
+  const candidates = [
+    {
+      enfermedadPrincipal: 'Alzheimer',
+      faseCuidado: 'avanzado',
+      edad: 45,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      enfermedadPrincipal: 'Demencia',
+      faseCuidado: 'avanzado',
+      edad: 48,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      enfermedadPrincipal: 'Parkinson',
+      faseCuidado: 'avanzado',
+      edad: 50,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      enfermedadPrincipal: 'ELA',
+      faseCuidado: 'avanzado',
+      edad: 49,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      enfermedadPrincipal: 'Alzheimer',
+      faseCuidado: 'avanzado',
+      edad: 46,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+    {
+      enfermedadPrincipal: 'Diabetes',
+      faseCuidado: 'avanzado',
+      edad: 47,
+      ubicacion: 'Madrid',
+      disponibilidadHoraria: { monday: ['18:00-20:00'] },
+      idioma: 'es',
+    },
+  ];
+
+  const result = generateCircles(candidates);
+
+  assert.ok(result.circles.length > 0 || result.waitlist.length > 0, 'Debe procesar candidatos sin IDs');
+
+  // Verificar que todos los miembros tienen ID (ya sea asignado o generado)
+  for (const circle of result.circles) {
+    for (const member of circle.members) {
+      assert.ok(member.id, 'Cada miembro debe tener un ID');
+    }
+  }
+});
+
+test('generateCircles calcula averageCompatibility para cada círculo', () => {
+  const candidates = Array.from({ length: 12 }, (_, i) => ({
+    id: `user_${i}`,
+    enfermedadPrincipal: 'Alzheimer',
+    faseCuidado: 'avanzado',
+    edad: 45 + (i % 5),
+    ubicacion: 'Madrid',
+    disponibilidadHoraria: { monday: ['18:00-20:00'] },
+    idioma: 'es',
+  }));
+
+  const result = generateCircles(candidates);
+
+  for (const circle of result.circles) {
+    assert.ok(typeof circle.averageCompatibility === 'number', 'averageCompatibility debe ser un número');
+    assert.ok(circle.averageCompatibility >= 0 && circle.averageCompatibility <= 100, 'averageCompatibility debe estar entre 0-100');
+  }
 });
