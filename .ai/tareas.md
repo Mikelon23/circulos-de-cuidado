@@ -52,7 +52,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  26 | Documentar política de privacidad               | `docs/PRIVACIDAD.md`           | completado  |
 |  27 | Definir algoritmo de matching                   | `docs/MATCHING.md`             | completado |
 |  28 | Implementar scoring de compatibilidad           | Tests unitarios                | completado |
-|  29 | Implementar generación de círculos              | Endpoint + tests               | pendiente  |
+|  29 | Implementar generación de círculos              | Endpoint + tests               | completado |
 |  30 | Implementar cola de espera                      | Sistema de cola                | pendiente  |
 |  31 | Crear panel de administración de círculos       | Dashboard básico               | pendiente  |
 |  32 | Implementar sugerencias de círculo              | Sistema de notificaciones      | pendiente  |
@@ -363,7 +363,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 29
 
 - id: 29
-- estado: pendiente
+- estado: completado
 - titulo: Implementar generación de círculos
 - objetivo: Algoritmo que agrupa 6-8 cuidadores con mayor compatibilidad mutua
 - entregable: Endpoint + tests
