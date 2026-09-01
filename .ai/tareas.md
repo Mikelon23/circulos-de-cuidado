@@ -53,7 +53,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  27 | Definir algoritmo de matching                   | `docs/MATCHING.md`             | completado |
 |  28 | Implementar scoring de compatibilidad           | Tests unitarios                | completado |
 |  29 | Implementar generación de círculos              | Endpoint + tests               | completado |
-|  30 | Implementar cola de espera                      | Sistema de cola                | pendiente  |
+|  30 | Implementar cola de espera                       | Sistema de cola                | completado |
 |  31 | Crear panel de administración de círculos       | Dashboard básico               | pendiente  |
 |  32 | Implementar sugerencias de círculo              | Sistema de notificaciones      | pendiente  |
 |  33 | Permitir cambio de círculo                      | Flujo + lógica                 | pendiente  |
@@ -372,7 +372,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 30
 
 - id: 30
-- estado: pendiente
+- estado: completado
 - titulo: Implementar cola de espera
 - objetivo: Cuidadores sin círculo disponible entran en lista con prioridad por urgencia
 - entregable: Sistema de cola
