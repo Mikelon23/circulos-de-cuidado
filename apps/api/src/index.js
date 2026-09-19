@@ -10,6 +10,7 @@ import { createOAuthService } from './oauth.cjs';
 import pkg from './matching.cjs';
 const { generateCircles } = pkg;
 import { createWaitingQueueService } from './waiting-queue.cjs';
+import { createAdminDashboardService } from './admin-dashboard.cjs';
 import {
   createCorsMiddleware,
   createInputSanitizationMiddleware,
@@ -29,6 +30,11 @@ const circleService = createCircleService();
 const circleMemberService = createCircleMemberService();
 const facilitatorService = createFacilitatorService();
 const waitingQueueService = createWaitingQueueService();
+const adminDashboardService = createAdminDashboardService({
+  circleService,
+  memberService: circleMemberService,
+  facilitatorService,
+});
 
 app.use(createCorsMiddleware());
 app.use(createRateLimitMiddleware());
@@ -311,6 +317,15 @@ app.delete('/api/v1/facilitators/:id', (req, res) => {
     res.json({ data: deleted });
   } catch (error) {
     res.status(404).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/admin/dashboard', (_req, res) => {
+  try {
+    const dashboard = adminDashboardService.getDashboard();
+    res.json({ data: dashboard });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

@@ -353,8 +353,156 @@ function calculateCompatibilityScore(profileA, profileB) {
   return Math.round(weightedScore * 100);
 }
 
+function generateCircles(candidates = [], config = {}) {
+  const normalizedCandidates = Array.isArray(candidates) ? candidates.map((candidate, index) => {
+    const cloned = { ...candidate };
+    const candidateId = cloned.id ?? cloned.userId ?? `candidate-${index + 1}`;
+    cloned.id = String(candidateId);
+    cloned.urgencia = Number.isFinite(Number(cloned.urgencia)) ? Number(cloned.urgencia) : 0;
+    return cloned;
+  }) : [];
+
+  const minSize = Number.isInteger(Number(config.minSize)) ? Number(config.minSize) : 6;
+  const maxSize = Number.isInteger(Number(config.maxSize)) ? Number(config.maxSize) : 8;
+  const threshold = Number.isFinite(Number(config.threshold)) ? Number(config.threshold) : 60;
+  const priority = config.priority === 'urgency' ? 'urgency' : 'compatibility';
+
+  const sortedCandidates = [...normalizedCandidates].sort((a, b) => {
+    if (priority === 'urgency') {
+      return Number(b.urgencia ?? 0) - Number(a.urgencia ?? 0);
+    }
+    return 0;
+  });
+
+  const remaining = [...sortedCandidates];
+  const circles = [];
+  const waitlist = [];
+
+  if (remaining.length === 0) {
+    return {
+      circles,
+      waitlist,
+      metrics: {
+        totalCandidates: 0,
+        circlesGenerated: 0,
+        averageCompatibility: 0,
+        assignmentRate: 0,
+        urgentAssignmentRate: 0,
+      },
+    };
+  }
+
+  while (remaining.length >= minSize) {
+    const circleCandidates = [];
+    const circleSet = new Set();
+
+    let seed = remaining.shift();
+    if (!seed) {
+      break;
+    }
+    circleCandidates.push(seed);
+    circleSet.add(seed.id);
+
+    while (circleCandidates.length < maxSize && remaining.length > 0) {
+      let bestCandidate = null;
+      let bestScore = -Infinity;
+
+      for (const candidate of remaining) {
+        if (circleSet.has(candidate.id)) {
+          continue;
+        }
+
+        const pairScores = circleCandidates.map((member) =>
+          calculateCompatibilityScore(member, candidate)
+        );
+        const averagePairScore =
+          pairScores.length > 0
+            ? pairScores.reduce((sum, score) => sum + score, 0) / pairScores.length
+            : 100;
+
+        if (averagePairScore > bestScore) {
+          bestScore = averagePairScore;
+          bestCandidate = candidate;
+        }
+      }
+
+      if (!bestCandidate || bestScore < threshold) {
+        break;
+      }
+
+      circleCandidates.push(bestCandidate);
+      circleSet.add(bestCandidate.id);
+      remaining.splice(remaining.indexOf(bestCandidate), 1);
+    }
+
+    if (circleCandidates.length >= minSize) {
+      const averageCompatibility =
+        circleCandidates.length > 1
+          ? circleCandidates.reduce((sum, current, index) => {
+              const rest = circleCandidates.slice(index + 1);
+              const pairAverage = rest.length
+                ? rest.reduce((innerSum, member) => {
+                    return innerSum + calculateCompatibilityScore(current, member);
+                  }, 0) / rest.length
+                : 100;
+              return sum + pairAverage;
+            }, 0) / circleCandidates.length
+          : 100;
+
+      circles.push({
+        id: `circle-${circles.length + 1}`,
+        members: circleCandidates.map((member) => ({ ...member })),
+        averageCompatibility: Number(averageCompatibility.toFixed(2)),
+      });
+    } else {
+      waitlist.push(...circleCandidates);
+    }
+
+    if (remaining.length === 0) {
+      break;
+    }
+  }
+
+  if (remaining.length > 0) {
+    waitlist.push(...remaining);
+  }
+
+  const assignedCount = circles.reduce((sum, circle) => sum + circle.members.length, 0);
+  const totalUrgent = normalizedCandidates.filter((candidate) => Number(candidate.urgencia) >= 8).length;
+  const assignedUrgent = circles.reduce((sum, circle) => {
+    return (
+      sum +
+      circle.members.filter((member) => Number(member.urgencia) >= 8).length
+    );
+  }, 0);
+
+  const averageCompatibility =
+    circles.length > 0
+      ? circles.reduce((sum, circle) => sum + Number(circle.averageCompatibility || 0), 0) /
+        circles.length
+      : 0;
+
+  return {
+    circles,
+    waitlist,
+    metrics: {
+      totalCandidates: normalizedCandidates.length,
+      circlesGenerated: circles.length,
+      averageCompatibility: Number(averageCompatibility.toFixed(2)),
+      assignmentRate: normalizedCandidates.length
+        ? Number(((assignedCount / normalizedCandidates.length) * 100).toFixed(2))
+        : 0,
+      urgentAssignmentRate:
+        totalUrgent > 0
+          ? Number(((assignedUrgent / totalUrgent) * 100).toFixed(2))
+          : 0,
+    },
+  };
+}
+
 // Export for CommonJS
 module.exports = {
+  generateCircles,
   calculateCompatibilityScore,
   scoreDiseaseCompatibility,
   scorePhaseCompatibility,
