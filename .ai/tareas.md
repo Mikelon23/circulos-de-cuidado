@@ -54,7 +54,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  28 | Implementar scoring de compatibilidad           | Tests unitarios                | completado |
 |  29 | Implementar generación de círculos              | Endpoint + tests               | completado |
 |  30 | Implementar cola de espera                       | Sistema de cola                | completado |
-|  31 | Crear panel de administración de círculos       | Dashboard básico               | pendiente  |
+|  31 | Crear panel de administración de círculos       | Dashboard básico               | completado |
 |  32 | Implementar sugerencias de círculo              | Sistema de notificaciones      | pendiente  |
 |  33 | Permitir cambio de círculo                      | Flujo + lógica                 | pendiente  |
 |  34 | Implementar matching de facilitador             | Algoritmo + endpoint           | pendiente  |
@@ -381,7 +381,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 31
 
 - id: 31
-- estado: pendiente
+- estado: completado
 - titulo: Crear panel de administración de círculos
 - objetivo: Vista para admins: círculos activos, miembros, facilitadores, intervenciones
 - entregable: Dashboard básico
