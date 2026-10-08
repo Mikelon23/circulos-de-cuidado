@@ -390,7 +390,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 32
 
 - id: 32
-- estado: pendiente
+- estado: completado
 - titulo: Implementar sugerencias de círculo
 - objetivo: Notificación al cuidador cuando se encuentra un círculo compatible
 - entregable: Sistema de notificaciones

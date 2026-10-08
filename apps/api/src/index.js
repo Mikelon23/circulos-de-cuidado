@@ -11,6 +11,7 @@ import pkg from './matching.cjs';
 const { generateCircles } = pkg;
 import { createWaitingQueueService } from './waiting-queue.cjs';
 import { createAdminDashboardService } from './admin-dashboard.cjs';
+import { createCircleSuggestionService } from './circle-suggestions.cjs';
 import {
   createCorsMiddleware,
   createInputSanitizationMiddleware,
@@ -30,6 +31,7 @@ const circleService = createCircleService();
 const circleMemberService = createCircleMemberService();
 const facilitatorService = createFacilitatorService();
 const waitingQueueService = createWaitingQueueService();
+const circleSuggestionService = createCircleSuggestionService();
 const adminDashboardService = createAdminDashboardService({
   circleService,
   memberService: circleMemberService,
@@ -412,8 +414,7 @@ app.delete('/api/v1/waiting-queue/:id', (req, res) => {
 app.post('/api/v1/waiting-queue/process', (req, res) => {
   try {
     const { config = {} } = req.body || {};
-    
-    // Get next candidates ready for matching
+
     const nextLimit = req.body?.limit || 12;
     const candidates = waitingQueueService.getNextCandidatesForMatching(nextLimit);
 
@@ -430,7 +431,6 @@ app.post('/api/v1/waiting-queue/process', (req, res) => {
       });
     }
 
-    // Generate circles from candidates
     const result = generateCircles(
       candidates.map((c) => ({
         id: c.cuidadorId,
@@ -440,7 +440,6 @@ app.post('/api/v1/waiting-queue/process', (req, res) => {
       config
     );
 
-    // Mark processed candidates as offered
     const processedIds = result.circles
       .flatMap((c) => c.members)
       .map((m) => candidates.find((cand) => cand.cuidadorId === m.id)?.id)
@@ -450,6 +449,25 @@ app.post('/api/v1/waiting-queue/process', (req, res) => {
       waitingQueueService.markAsOffered(processedIds);
     }
 
+    const suggestions = result.circles.flatMap((circle) =>
+      circle.members.map((member) => {
+        const id = candidates.find((candidate) => candidate.cuidadorId === member.id)?.id;
+        const circleName = `Círculo ${circle.id}`;
+        return circleSuggestionService.createSuggestion({
+          cuidadorId: id || member.id,
+          circleId: circle.id,
+          circleName,
+          score: Number(circle.averageCompatibility || 0),
+          tipo: 'circle_suggestion',
+          estado: 'sent',
+          metadata: {
+            generatedFrom: 'waiting-queue/process',
+            circleSize: circle.members.length,
+          },
+        });
+      })
+    );
+
     res.status(201).json({
       data: {
         circlesGenerated: result.circles.length,
@@ -457,8 +475,41 @@ app.post('/api/v1/waiting-queue/process', (req, res) => {
         processedCount: processedIds.length,
         waitlistCount: result.waitlist.length,
         metrics: result.metrics,
+        suggestions,
       },
     });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-suggestions', (req, res) => {
+  try {
+    const suggestions = circleSuggestionService.listSuggestions({
+      cuidadorId: req.query.cuidadorId,
+      estado: req.query.estado,
+      tipo: req.query.tipo,
+      sortBy: req.query.sortBy || 'score',
+    });
+    res.json({ data: suggestions });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-suggestions/:id', (req, res) => {
+  try {
+    const suggestion = circleSuggestionService.getSuggestion(req.params.id);
+    res.json({ data: suggestion });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/circle-suggestions/:id', (req, res) => {
+  try {
+    const updated = circleSuggestionService.updateSuggestion(req.params.id, req.body || {});
+    res.json({ data: updated });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
