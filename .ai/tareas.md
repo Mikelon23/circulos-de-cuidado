@@ -399,7 +399,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 33
 
 - id: 33
-- estado: pendiente
+- estado: completado
 - titulo: Permitir cambio de círculo
 - objetivo: Cuidador puede solicitar re-matching si no conecta con su grupo
 - entregable: Flujo + lógica
