@@ -226,6 +226,28 @@ app.get('/api/v1/circles/:id', (req, res) => {
   }
 });
 
+app.get('/api/v1/circles/:id/facilitator-match', (req, res) => {
+  try {
+    const circle = circleService.getCircle(req.params.id);
+    const members = circleMemberService.listMembers().filter((member) => member.circleId === req.params.id);
+    const result = facilitatorService.matchFacilitatorForCircle(circle, facilitatorService.listFacilitators(), members);
+    res.json({ data: result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circles/:id/facilitator-match', (req, res) => {
+  try {
+    const circle = circleService.getCircle(req.params.id);
+    const members = req.body?.members ?? req.body?.miembros ?? circleMemberService.listMembers().filter((member) => member.circleId === req.params.id);
+    const result = facilitatorService.matchFacilitatorForCircle(circle, req.body?.facilitators ?? facilitatorService.listFacilitators(), members);
+    res.json({ data: result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.patch('/api/v1/circles/:id', (req, res) => {
   try {
     const updated = circleService.updateCircle(req.params.id, req.body || {});
@@ -295,6 +317,29 @@ app.post('/api/v1/facilitators', (req, res) => {
 
 app.get('/api/v1/facilitators', (_req, res) => {
   res.json({ data: facilitatorService.listFacilitators() });
+});
+
+app.post('/api/v1/facilitators/match', (req, res) => {
+  try {
+    const circle = req.body?.circle || req.body?.payload || req.body || {};
+    const facilitators = req.body?.facilitators ?? req.body?.candidatos ?? facilitatorService.listFacilitators();
+    const result = facilitatorService.matchFacilitatorForCircle(circle, facilitators);
+    res.json({ data: result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/facilitators/:id/match', (req, res) => {
+  try {
+    const facilitator = facilitatorService.getFacilitator(req.params.id);
+    const circle = req.body?.circle || req.body || {};
+    const members = req.body?.members ?? req.body?.miembros ?? [];
+    const result = facilitatorService.scoreFacilitatorForCircle(facilitator, circle, members);
+    res.json({ data: { facilitator, ...result } });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 
 app.get('/api/v1/facilitators/:id', (req, res) => {

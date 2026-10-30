@@ -408,7 +408,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 34
 
 - id: 34
-- estado: pendiente
+- estado: completado
 - titulo: Implementar matching de facilitador
 - objetivo: Asignar facilitador ex-cuidador más compatible al círculo
 - entregable: Algoritmo + endpoint
