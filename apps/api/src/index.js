@@ -12,6 +12,7 @@ const { generateCircles } = pkg;
 import { createWaitingQueueService } from './waiting-queue.cjs';
 import { createAdminDashboardService } from './admin-dashboard.cjs';
 import { createCircleSuggestionService } from './circle-suggestions.cjs';
+import { createCircleChangeService } from './circle-change.cjs';
 import {
   createCorsMiddleware,
   createInputSanitizationMiddleware,
@@ -32,6 +33,7 @@ const circleMemberService = createCircleMemberService();
 const facilitatorService = createFacilitatorService();
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
+const circleChangeService = createCircleChangeService();
 const adminDashboardService = createAdminDashboardService({
   circleService,
   memberService: circleMemberService,
@@ -509,6 +511,107 @@ app.get('/api/v1/circle-suggestions/:id', (req, res) => {
 app.patch('/api/v1/circle-suggestions/:id', (req, res) => {
   try {
     const updated = circleSuggestionService.updateSuggestion(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circle-change-requests', (req, res) => {
+  try {
+    const request = circleChangeService.createRequest(req.body || {});
+    res.status(201).json({ data: request });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circle-changes', (req, res) => {
+  try {
+    const request = circleChangeService.createRequest(req.body || {});
+    res.status(201).json({ data: request });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-change-requests', (req, res) => {
+  try {
+    const requests = circleChangeService.listRequests({
+      cuidadorId: req.query.cuidadorId,
+      estado: req.query.estado,
+      currentCircleId: req.query.currentCircleId,
+      sortBy: req.query.sortBy || 'createdAt',
+    });
+    res.json({ data: requests });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-changes', (req, res) => {
+  const nextReq = { ...req, query: req.query };
+  try {
+    const requests = circleChangeService.listRequests({
+      cuidadorId: nextReq.query.cuidadorId,
+      estado: nextReq.query.estado,
+      currentCircleId: nextReq.query.currentCircleId,
+      sortBy: nextReq.query.sortBy || 'createdAt',
+    });
+    res.json({ data: requests });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-change-requests/:id', (req, res) => {
+  try {
+    const request = circleChangeService.getRequest(req.params.id);
+    res.json({ data: request });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-changes/:id', (req, res) => {
+  try {
+    const request = circleChangeService.getRequest(req.params.id);
+    res.json({ data: request });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/circle-change-requests/:id', (req, res) => {
+  try {
+    const updated = circleChangeService.updateRequest(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/circle-changes/:id', (req, res) => {
+  try {
+    const updated = circleChangeService.updateRequest(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circle-change-requests/:id/approve', (req, res) => {
+  try {
+    const updated = circleChangeService.approveRequest(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circle-change-requests/:id/reject', (req, res) => {
+  try {
+    const updated = circleChangeService.rejectRequest(req.params.id, req.body?.reason || req.body?.motivo);
     res.json({ data: updated });
   } catch (error) {
     res.status(400).json({ error: error.message });
