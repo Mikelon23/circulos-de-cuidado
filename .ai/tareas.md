@@ -428,7 +428,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 36
 
 - id: 36
-- estado: pendiente
+- estado: completado
 - titulo: Implementar creación de círculos
 - objetivo: Flujo completo: matching → creación → invitación → confirmación
 - entregable: Flujo end-to-end

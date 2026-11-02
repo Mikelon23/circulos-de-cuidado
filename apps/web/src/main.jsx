@@ -42,6 +42,26 @@ async function fetchAdminDashboard() {
   return body.data;
 }
 
+async function authenticatedRequest(path, accessToken, options = {}) {
+  const response = await fetch(`${apiUrl}${path}`, {
+    ...options,
+    headers: {
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      Authorization: `Bearer ${accessToken}`,
+      ...options.headers,
+    },
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body.error || 'No se pudo completar la solicitud.');
+  }
+  return body.data;
+}
+
+async function fetchCircleInvitations(accessToken) {
+  return authenticatedRequest('/api/v1/circle-invitations', accessToken);
+}
+
 const sampleCandidates = Array.from({ length: 10 }, (_, index) => ({
   id: `cuidador-${index + 1}`,
   nombre: `Cuidador de prueba ${index + 1}`,
@@ -302,7 +322,17 @@ function StatCard({ label, value, tone = '#e7f2ff' }) {
 
 function App() {
   const [oauthError, setOauthError] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() =>
+    Boolean(localStorage.getItem('accessToken'))
+  );
+  const [currentUser, setCurrentUser] = useState(null);
+  const [invitations, setInvitations] = useState([]);
+  const [invitationsError, setInvitationsError] = useState('');
+  const [invitationActionId, setInvitationActionId] = useState('');
+  const [invitationMessage, setInvitationMessage] = useState('');
+  const [queueProcessMessage, setQueueProcessMessage] = useState('');
+  const [queueProcessError, setQueueProcessError] = useState('');
+  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -340,6 +370,94 @@ function App() {
       .catch((error) => setDashboardError(error.message));
   }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setCurrentUser(null);
+      setInvitations([]);
+      return;
+    }
+
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      setIsAuthenticated(false);
+      return;
+    }
+
+    let active = true;
+    authenticatedRequest('/api/v1/users/me', accessToken)
+      .then((user) => {
+        if (active) {
+          setCurrentUser(user);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setInvitationsError(error.message);
+        }
+      });
+
+    fetchCircleInvitations(accessToken)
+      .then((data) => {
+        if (active) {
+          setInvitations(data);
+          setInvitationsError('');
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setInvitationsError(error.message);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated]);
+
+  async function handleInvitationResponse(memberId, response) {
+    setInvitationActionId(memberId);
+    setInvitationMessage('');
+    setInvitationsError('');
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      await authenticatedRequest(`/api/v1/circle-invitations/${memberId}/respond`, accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ response }),
+      });
+      setInvitationMessage(
+        response === 'accepted'
+          ? 'Has aceptado la invitación al círculo.'
+          : 'Has rechazado la invitación.'
+      );
+      setInvitations(await fetchCircleInvitations(accessToken));
+    } catch (error) {
+      setInvitationsError(error.message);
+    } finally {
+      setInvitationActionId('');
+    }
+  }
+
+  async function handleQueueProcessing() {
+    setIsProcessingQueue(true);
+    setQueueProcessMessage('');
+    setQueueProcessError('');
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      const result = await authenticatedRequest('/api/v1/waiting-queue/process', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      setQueueProcessMessage(
+        `Se crearon ${result.circlesGenerated} círculos y se enviaron ${result.processedCount} invitaciones.`
+      );
+      setDashboard(await fetchAdminDashboard());
+    } catch (error) {
+      setQueueProcessError(error.message);
+    } finally {
+      setIsProcessingQueue(false);
+    }
+  }
+
   async function handleRequestReset(event) {
     event.preventDefault();
     setResetError('');
@@ -373,11 +491,77 @@ function App() {
       {oauthError && <p role="alert">No se pudo iniciar sesión: {oauthError}</p>}
       {isAuthenticated && <p role="status">Sesión iniciada correctamente.</p>}
 
+      {isAuthenticated && (
+        <section
+          aria-labelledby="circle-invitations-title"
+          style={{
+            margin: '2rem 0',
+            padding: '1.5rem',
+            background: '#f7fafd',
+            borderRadius: '16px',
+          }}
+        >
+          <h2 id="circle-invitations-title">Invitaciones a círculos</h2>
+          {invitationsError && <p role="alert">{invitationsError}</p>}
+          {invitationMessage && <p role="status">{invitationMessage}</p>}
+          {!invitations.length && !invitationsError ? (
+            <p>No tienes invitaciones.</p>
+          ) : (
+            invitations.map((invitation) => (
+              <article
+                key={invitation.id}
+                style={{
+                  background: '#fff',
+                  border: '1px solid #dfe9f5',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  marginBottom: '1rem',
+                }}
+              >
+                <h3>
+                  {invitation.circle?.nombre || invitation.circleName || 'Círculo de cuidado'}
+                </h3>
+                <p>{invitation.mensaje}</p>
+                {invitation.member?.estado === 'invitado' && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={invitationActionId === invitation.member.id}
+                      onClick={() => handleInvitationResponse(invitation.member.id, 'accepted')}
+                    >
+                      Aceptar invitación
+                    </button>{' '}
+                    <button
+                      type="button"
+                      disabled={invitationActionId === invitation.member.id}
+                      onClick={() => handleInvitationResponse(invitation.member.id, 'rejected')}
+                    >
+                      Rechazar
+                    </button>
+                  </>
+                )}
+                {invitation.member?.estado === 'activo' && <p>Invitación aceptada.</p>}
+                {invitation.member?.estado === 'salido' && <p>Invitación rechazada.</p>}
+              </article>
+            ))
+          )}
+        </section>
+      )}
+
       <section
         aria-labelledby="admin-dashboard-title"
         style={{ margin: '2rem 0', padding: '1.5rem', background: '#f7fafd', borderRadius: '16px' }}
       >
         <h2 id="admin-dashboard-title">Panel de administración de círculos</h2>
+        {currentUser?.rol === 'admin' && (
+          <div style={{ marginBottom: '1rem' }}>
+            <button type="button" onClick={handleQueueProcessing} disabled={isProcessingQueue}>
+              {isProcessingQueue ? 'Procesando cola…' : 'Crear círculos e invitar cuidadores'}
+            </button>
+            {queueProcessMessage && <p role="status">{queueProcessMessage}</p>}
+            {queueProcessError && <p role="alert">{queueProcessError}</p>}
+          </div>
+        )}
         {dashboardError ? (
           <p role="alert">{dashboardError}</p>
         ) : dashboard ? (

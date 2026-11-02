@@ -515,3 +515,51 @@ Al re-matching:
 - Tareas relacionadas: 28, 29, 30, 34, 35
 - Documentos consultados: `DB_SCHEMA.md`, `ARQUITECTURA.md`
 - Patrón: Algoritmo greedy con matriz de compatibilidad pairwise
+
+## 11. Creación, invitación y confirmación
+
+El endpoint de simulación (`POST /api/v1/matching/generate-circles`) solo calcula resultados. Para materializar círculos e invitar a sus miembros, un administrador autenticado puede llamar:
+
+```http
+POST /api/v1/matching/create-circles
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+```json
+{
+  "candidates": [
+    {
+      "id": "<user-id>",
+      "enfermedadPrincipal": "Alzheimer",
+      "faseCuidado": "avanzado",
+      "edad": 42,
+      "ubicacion": "Madrid",
+      "disponibilidadHoraria": { "monday": ["18:00-20:00"] },
+      "idioma": "es"
+    }
+  ],
+  "config": {
+    "minSize": 6,
+    "maxSize": 8,
+    "threshold": 60,
+    "priority": "compatibility"
+  }
+}
+```
+
+Cada grupo generado se guarda como círculo, sus miembros comienzan en estado `invitado` y cada cuidador recibe una invitación `circle_offer`. Los candidatos no asignados permanecen en la lista de espera. La respuesta incluye los círculos creados, sus miembros e invitaciones, los no asignados y las métricas.
+
+El procesamiento administrativo de la cola (`POST /api/v1/waiting-queue/process`) sigue el mismo flujo y marca como `offered` solo a quienes recibieron invitación. El cuidador autenticado consulta sus invitaciones con `GET /api/v1/circle-invitations` y responde una vez por invitación:
+
+```http
+POST /api/v1/circle-invitations/<member-id>/respond
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+```json
+{ "response": "accepted" }
+```
+
+`response` admite `accepted` o `rejected`. La identidad se toma del token, no del cuerpo: aceptar cambia el miembro a `activo` y rechazarlo a `salido`; en ambos casos se actualiza la invitación y, si procede, el estado de la entrada de cola.

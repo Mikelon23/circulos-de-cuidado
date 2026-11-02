@@ -131,6 +131,20 @@ function createCircleSuggestionService() {
       return sanitizeSuggestion(suggestion);
     },
 
+    deleteSuggestion(suggestionId) {
+      if (!suggestionId) {
+        throw new Error('El identificador de la sugerencia es obligatorio');
+      }
+
+      const index = suggestions.findIndex((candidate) => candidate.id === suggestionId);
+      if (index === -1) {
+        throw new Error('Sugerencia no encontrada');
+      }
+
+      const [deleted] = suggestions.splice(index, 1);
+      return sanitizeSuggestion(deleted);
+    },
+
     getSuggestionsForCaregiver(cuidadorId) {
       if (!cuidadorId) {
         throw new Error('El identificador del cuidador es obligatorio');
