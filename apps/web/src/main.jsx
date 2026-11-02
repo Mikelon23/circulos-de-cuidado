@@ -42,6 +42,245 @@ async function fetchAdminDashboard() {
   return body.data;
 }
 
+const sampleCandidates = Array.from({ length: 10 }, (_, index) => ({
+  id: `cuidador-${index + 1}`,
+  nombre: `Cuidador de prueba ${index + 1}`,
+  enfermedadPrincipal: index < 8 ? 'Alzheimer' : 'Diabetes',
+  faseCuidado: index < 8 ? 'avanzado' : 'inicial',
+  edad: 38 + index * 2,
+  ubicacion: index < 8 ? 'Madrid' : 'Barcelona',
+  disponibilidadHoraria: {
+    monday: ['18:00-20:00'],
+    wednesday: ['18:00-20:00'],
+  },
+  idioma: 'es',
+  urgencia: index === 0 ? 9 : 5,
+}));
+
+function MatchingSimulator() {
+  const [candidatesJson, setCandidatesJson] = useState(JSON.stringify(sampleCandidates, null, 2));
+  const [minSize, setMinSize] = useState('6');
+  const [maxSize, setMaxSize] = useState('8');
+  const [threshold, setThreshold] = useState('60');
+  const [priority, setPriority] = useState('compatibility');
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
+
+  async function handleSimulation(event) {
+    event.preventDefault();
+    setError('');
+
+    let candidates;
+    try {
+      candidates = JSON.parse(candidatesJson);
+    } catch {
+      setError('Los datos de prueba no son JSON válido.');
+      return;
+    }
+
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+      setError('Introduce un array JSON con al menos un cuidador candidato.');
+      return;
+    }
+
+    const config = {
+      minSize: Number(minSize),
+      maxSize: Number(maxSize),
+      threshold: Number(threshold),
+      priority,
+    };
+    if (
+      !Number.isInteger(config.minSize) ||
+      !Number.isInteger(config.maxSize) ||
+      config.minSize < 1 ||
+      config.maxSize < config.minSize ||
+      !Number.isFinite(config.threshold) ||
+      config.threshold < 0 ||
+      config.threshold > 100
+    ) {
+      setError('Revisa los parámetros: tamaño mínimo/máximo y umbral entre 0 y 100.');
+      return;
+    }
+
+    setIsRunning(true);
+    try {
+      const response = await fetch(`${apiUrl}/api/v1/matching/generate-circles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidates, config }),
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body.error || 'No se pudo ejecutar el matching.');
+      }
+      setResult(body.data);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsRunning(false);
+    }
+  }
+
+  return (
+    <main
+      style={{
+        fontFamily: 'sans-serif',
+        padding: '2rem',
+        color: '#1f2d3d',
+        maxWidth: '1100px',
+        margin: '0 auto',
+      }}
+    >
+      <a href="/">← Volver a Círculos de Cuidado</a>
+      <h1>Simulador de matching</h1>
+      <p>
+        Prueba el algoritmo de generación de círculos con datos de ejemplo o con tus propios
+        perfiles.
+      </p>
+
+      <form onSubmit={handleSimulation} style={{ display: 'grid', gap: '1.25rem' }}>
+        <label style={{ display: 'grid', gap: '0.5rem' }}>
+          Candidatos (JSON)
+          <textarea
+            aria-label="Candidatos (JSON)"
+            value={candidatesJson}
+            onChange={(event) => setCandidatesJson(event.target.value)}
+            rows={18}
+            spellCheck={false}
+            style={{
+              fontFamily: 'monospace',
+              padding: '0.75rem',
+              border: '1px solid #cbd5e1',
+              borderRadius: '8px',
+            }}
+          />
+        </label>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+          <label>
+            Tamaño mínimo{' '}
+            <input
+              type="number"
+              min="1"
+              value={minSize}
+              onChange={(event) => setMinSize(event.target.value)}
+            />
+          </label>
+          <label>
+            Tamaño máximo{' '}
+            <input
+              type="number"
+              min="1"
+              value={maxSize}
+              onChange={(event) => setMaxSize(event.target.value)}
+            />
+          </label>
+          <label>
+            Umbral de compatibilidad (0–100){' '}
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={threshold}
+              onChange={(event) => setThreshold(event.target.value)}
+            />
+          </label>
+          <label>
+            Prioridad{' '}
+            <select value={priority} onChange={(event) => setPriority(event.target.value)}>
+              <option value="compatibility">Compatibilidad</option>
+              <option value="urgency">Urgencia</option>
+            </select>
+          </label>
+        </div>
+
+        <div>
+          <button type="submit" disabled={isRunning}>
+            {isRunning ? 'Ejecutando…' : 'Ejecutar matching'}
+          </button>
+        </div>
+      </form>
+
+      {error && <p role="alert">{error}</p>}
+
+      {result && (
+        <section aria-labelledby="matching-results-title" style={{ marginTop: '2rem' }}>
+          <h2 id="matching-results-title">Resultados</h2>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+            <StatCard label="Candidatos" value={result.metrics.totalCandidates} />
+            <StatCard
+              label="Círculos generados"
+              value={result.metrics.circlesGenerated}
+              tone="#edf9f0"
+            />
+            <StatCard
+              label="Compatibilidad media"
+              value={`${result.metrics.averageCompatibility}%`}
+              tone="#fff5de"
+            />
+            <StatCard
+              label="Tasa de asignación"
+              value={`${result.metrics.assignmentRate}%`}
+              tone="#f5ebff"
+            />
+            <StatCard
+              label="Asignación urgente"
+              value={`${result.metrics.urgentAssignmentRate}%`}
+            />
+          </div>
+
+          <h3>Círculos</h3>
+          {result.circles.length ? (
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              {result.circles.map((circle) => (
+                <article
+                  key={circle.id}
+                  style={{
+                    background: '#f7fafd',
+                    border: '1px solid #dfe9f5',
+                    borderRadius: '12px',
+                    padding: '1rem',
+                  }}
+                >
+                  <h4 style={{ marginTop: 0 }}>
+                    {circle.id} · {circle.members.length} miembros · {circle.averageCompatibility}%
+                    de compatibilidad
+                  </h4>
+                  <ul>
+                    {circle.members.map((member) => (
+                      <li key={member.id}>
+                        {member.nombre || member.name || member.id || member.userId} —{' '}
+                        {member.enfermedadPrincipal || 'Sin diagnóstico'},{' '}
+                        {member.ubicacion || 'ubicación no indicada'}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>No se generaron círculos con estos candidatos y parámetros.</p>
+          )}
+
+          <h3>Lista de espera ({result.waitlist.length})</h3>
+          {result.waitlist.length ? (
+            <ul>
+              {result.waitlist.map((candidate) => (
+                <li key={candidate.id}>
+                  {candidate.nombre || candidate.name || candidate.id || candidate.userId}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Todos los candidatos fueron asignados.</p>
+          )}
+        </section>
+      )}
+    </main>
+  );
+}
+
 function StatCard({ label, value, tone = '#e7f2ff' }) {
   return (
     <div
@@ -53,7 +292,9 @@ function StatCard({ label, value, tone = '#e7f2ff' }) {
         minWidth: '160px',
       }}
     >
-      <div style={{ color: '#3d4d65', fontSize: '0.75rem', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ color: '#3d4d65', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+        {label}
+      </div>
       <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.5rem' }}>{value}</div>
     </div>
   );
@@ -144,8 +385,16 @@ function App() {
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
               <StatCard label="Círculos activos" value={dashboard.stats.activeCircles} />
               <StatCard label="Miembros" value={dashboard.stats.membersCount} tone="#edf9f0" />
-              <StatCard label="Facilitadores" value={dashboard.stats.facilitatorsCount} tone="#fff5de" />
-              <StatCard label="Intervenciones" value={dashboard.stats.interventionsCount} tone="#f5ebff" />
+              <StatCard
+                label="Facilitadores"
+                value={dashboard.stats.facilitatorsCount}
+                tone="#fff5de"
+              />
+              <StatCard
+                label="Intervenciones"
+                value={dashboard.stats.interventionsCount}
+                tone="#f5ebff"
+              />
             </div>
             <div style={{ display: 'grid', gap: '1rem' }}>
               {dashboard.circles.map((circle) => (
@@ -239,8 +488,10 @@ function App() {
   );
 }
 
+const RootApp = window.location.pathname === '/dev/matching' ? MatchingSimulator : App;
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <RootApp />
   </React.StrictMode>
 );
