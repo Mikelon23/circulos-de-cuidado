@@ -417,7 +417,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 35
 
 - id: 35
-- estado: pendiente
+- estado: completado
 - titulo: Crear simulador de matching (dev tool)
 - objetivo: Interfaz para probar el algoritmo con datos de prueba
 - entregable: `/dev/matching`
