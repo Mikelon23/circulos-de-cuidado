@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
+import JitsiRoom from './jitsi-room.jsx';
+import { buildJitsiRoomName } from './jitsi-room-utils.js';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -320,100 +322,6 @@ function StatCard({ label, value, tone = '#e7f2ff' }) {
   );
 }
 
-function buildJitsiRoomName(baseName = 'circulos-de-cuidado') {
-  const sanitized = String(baseName)
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40);
-
-  const suffix =
-    typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID().slice(0, 8)
-      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-
-  return `${sanitized || 'circulos-de-cuidado'}-${suffix}`;
-}
-
-function JitsiRoom() {
-  const [roomName, setRoomName] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('room') || buildJitsiRoomName('circulos-de-cuidado');
-  });
-  const [displayName, setDisplayName] = useState(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) return 'Cuidador';
-    try {
-      const parsedUser = JSON.parse(savedUser);
-      return parsedUser.nombre || parsedUser.email || 'Cuidador';
-    } catch {
-      return 'Cuidador';
-    }
-  });
-
-  const jitsiUrl = `https://meet.jit.si/${encodeURIComponent(roomName)}?config.startWithAudioMuted=true&config.startWithVideoMuted=false&userInfo.displayName=${encodeURIComponent(displayName)}`;
-
-  return (
-    <main
-      style={{
-        fontFamily: 'sans-serif',
-        padding: '2rem',
-        color: '#1f2d3d',
-        maxWidth: '1100px',
-        margin: '0 auto',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-        <div>
-          <a href="/">← Volver a Círculos de Cuidado</a>
-          <h1 style={{ marginBottom: '0.5rem' }}>Sala de video</h1>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            const nextRoom = buildJitsiRoomName('circulos-de-cuidado');
-            setRoomName(nextRoom);
-            const nextUrl = `${window.location.pathname}?room=${encodeURIComponent(nextRoom)}`;
-            window.history.replaceState({}, document.title, nextUrl);
-          }}
-        >
-          Generar otra sala
-        </button>
-      </div>
-
-      <p style={{ margin: '0.5rem 0 1.5rem' }}>
-        Sala activa: <strong>{roomName}</strong>
-      </p>
-
-      <label style={{ display: 'block', marginBottom: '1rem' }}>
-        Nombre visible en la videollamada
-        <input
-          type="text"
-          value={displayName}
-          onChange={(event) => setDisplayName(event.target.value || 'Cuidador')}
-          style={{ display: 'block', width: '100%', maxWidth: '420px', marginTop: '0.5rem' }}
-        />
-      </label>
-
-      <iframe
-        title="Sala de videollamada de Círculos de Cuidado"
-        src={jitsiUrl}
-        allow="camera; microphone; fullscreen; display-capture; speaker-selection;"
-        allowFullScreen
-        style={{
-          width: '100%',
-          minHeight: '70vh',
-          border: '0',
-          borderRadius: '18px',
-          background: '#edf2f7',
-        }}
-      />
-    </main>
-  );
-}
-
 function App() {
   const [oauthError, setOauthError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(() =>
@@ -555,7 +463,7 @@ function App() {
   }
 
   function openJitsiRoom() {
-    const roomName = buildJitsiRoomName(currentUser?.nombre || currentUser?.email || 'circulos');
+    const roomName = buildJitsiRoomName();
     window.location.assign(`/sala?room=${encodeURIComponent(roomName)}`);
   }
 
@@ -721,7 +629,7 @@ function App() {
       <section aria-labelledby="video-room-title">
         <h2 id="video-room-title">Sala de videollamada</h2>
         <p>
-          Únete a una sesión de apoyo con una sala Jitsi segura y con nombre único para cada grupo.
+          Crea una sala Jitsi con enlace único y compártelo con las personas de tu círculo.
         </p>
         <button type="button" onClick={openJitsiRoom}>
           Abrir sala de video

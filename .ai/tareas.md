@@ -60,7 +60,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  34 | Implementar matching de facilitador             | Algoritmo + endpoint           | pendiente  |
 |  35 | Crear simulador de matching (dev tool)          | `/dev/matching`                | pendiente  |
 |  36 | Implementar creación de círculos                | Flujo end-to-end               | pendiente  |
-|  37 | Implementar sala de video (Jitsi)               | Componente React/Vue           | pendiente  |
+|  37 | Implementar sala de video (Jitsi)               | Componente React/Vue           | completado |
 |  38 | Implementar agenda de sesiones                  | Vista calendario               | pendiente  |
 |  39 | Implementar guión de sesión para facilitador    | Template dinámico              | pendiente  |
 |  40 | Implementar timer de sesión                     | Componente en sala             | pendiente  |
@@ -437,7 +437,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 37
 
 - id: 37
-- estado: pendiente
+- estado: completado
 - titulo: Implementar sala de video (Jitsi)
 - objetivo: Integración iframe de Jitsi Meet (self-hosted o meet.jit.si) con nombre de sala único
 - entregable: Componente React/Vue
