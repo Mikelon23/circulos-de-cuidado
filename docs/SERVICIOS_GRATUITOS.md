@@ -48,6 +48,10 @@ Uso recomendado: SendGrid para confirmaciones y recuperación de contraseña en 
 
 Uso recomendado: integrar Jitsi embed para sesiones de grupo en primera fase.
 
+La vista `/sala` genera un nombre de sala único en la URL; comparte ese enlace para que el grupo
+entre a la misma reunión. `meet.jit.si` es un servicio público: el nombre de sala no autentica a
+los participantes, así que evita compartir datos sensibles.
+
 ## Almacenamiento de archivos
 - **Supabase Storage (free)**: storage S3-like básico incluido en el plan gratuito.
 - **Cloudflare R2 (free tier)**: S3-compatible con ventajas en costos de salida, revisar cuota gratuita.

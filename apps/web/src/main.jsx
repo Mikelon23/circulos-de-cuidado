@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
+import JitsiRoom from './jitsi-room.jsx';
+import { buildJitsiRoomName } from './jitsi-room-utils.js';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -373,6 +375,7 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated) {
       setCurrentUser(null);
+      localStorage.removeItem('currentUser');
       setInvitations([]);
       return;
     }
@@ -388,6 +391,7 @@ function App() {
       .then((user) => {
         if (active) {
           setCurrentUser(user);
+          localStorage.setItem('currentUser', JSON.stringify(user));
         }
       })
       .catch((error) => {
@@ -456,6 +460,11 @@ function App() {
     } finally {
       setIsProcessingQueue(false);
     }
+  }
+
+  function openJitsiRoom() {
+    const roomName = buildJitsiRoomName();
+    window.location.assign(`/sala?room=${encodeURIComponent(roomName)}`);
   }
 
   async function handleRequestReset(event) {
@@ -617,6 +626,16 @@ function App() {
         )}
       </section>
 
+      <section aria-labelledby="video-room-title">
+        <h2 id="video-room-title">Sala de videollamada</h2>
+        <p>
+          Crea una sala Jitsi con enlace único y compártelo con las personas de tu círculo.
+        </p>
+        <button type="button" onClick={openJitsiRoom}>
+          Abrir sala de video
+        </button>
+      </section>
+
       <section aria-labelledby="social-login-title">
         <h2 id="social-login-title">Iniciar sesión</h2>
         <button type="button" onClick={() => startOAuth('google')}>
@@ -672,7 +691,13 @@ function App() {
   );
 }
 
-const RootApp = window.location.pathname === '/dev/matching' ? MatchingSimulator : App;
+const isJitsiRoute =
+  window.location.pathname === '/sala' ||
+  window.location.pathname === '/video' ||
+  window.location.pathname === '/sala/' ||
+  window.location.pathname === '/video/';
+
+const RootApp = window.location.pathname === '/dev/matching' ? MatchingSimulator : isJitsiRoute ? JitsiRoom : App;
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
