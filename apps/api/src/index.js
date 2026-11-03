@@ -13,6 +13,7 @@ import { createWaitingQueueService } from './waiting-queue.cjs';
 import { createAdminDashboardService } from './admin-dashboard.cjs';
 import { createCircleSuggestionService } from './circle-suggestions.cjs';
 import { createCircleChangeService } from './circle-change.cjs';
+import { createCircleWorkflowService } from './circle-workflow.cjs';
 import {
   createCorsMiddleware,
   createInputSanitizationMiddleware,
@@ -34,6 +35,13 @@ const facilitatorService = createFacilitatorService();
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
 const circleChangeService = createCircleChangeService();
+const circleWorkflowService = createCircleWorkflowService({
+  generateCircles,
+  circleService,
+  memberService: circleMemberService,
+  suggestionService: circleSuggestionService,
+  waitingQueueService,
+});
 const adminDashboardService = createAdminDashboardService({
   circleService,
   memberService: circleMemberService,
@@ -45,11 +53,24 @@ app.use(createRateLimitMiddleware());
 app.use(express.json({ limit: '100kb' }));
 app.use(createInputSanitizationMiddleware());
 
+function requireAdmin(req, res, next) {
+  if (req.auth?.rol !== 'admin') {
+    return res.status(403).json({ error: 'Se requieren permisos de administrador' });
+  }
+  return next();
+}
+
 app.get('/health', (_req, res) => {
   res.json(createHealthCheck('api'));
 });
 
 app.post('/api/v1/users/register', (req, res) => {
+  if (String(req.body?.role || '').trim().toLowerCase() === 'admin') {
+    return res.status(403).json({
+      error: 'El rol de administrador no se puede asignar durante el registro',
+    });
+  }
+
   try {
     const created = userService.registerUser(req.body || {});
     res.status(201).json({ data: created });
@@ -398,6 +419,19 @@ app.post('/api/v1/matching/generate-circles', (req, res) => {
   }
 });
 
+app.post('/api/v1/matching/create-circles', requireAuth(authService), requireAdmin, (req, res) => {
+  try {
+    const result = circleWorkflowService.createCirclesFromMatching(req.body?.candidates, {
+      config: req.body?.config,
+      circle: req.body?.circle,
+    });
+
+    res.status(201).json({ data: result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // Waiting Queue endpoints
 app.post('/api/v1/waiting-queue', (req, res) => {
   try {
@@ -458,7 +492,7 @@ app.delete('/api/v1/waiting-queue/:id', (req, res) => {
   }
 });
 
-app.post('/api/v1/waiting-queue/process', (req, res) => {
+app.post('/api/v1/waiting-queue/process', requireAuth(authService), requireAdmin, (req, res) => {
   try {
     const { config = {} } = req.body || {};
 
@@ -478,51 +512,40 @@ app.post('/api/v1/waiting-queue/process', (req, res) => {
       });
     }
 
-    const result = generateCircles(
-      candidates.map((c) => ({
-        id: c.cuidadorId,
-        ...c.perfilCuidador,
-        urgencia: c.urgencia,
+    const workflowResult = circleWorkflowService.createCirclesFromMatching(
+      candidates.map((candidate) => ({
+        ...candidate.perfilCuidador,
+        id: candidate.cuidadorId,
+        usuarioId: candidate.cuidadorId,
+        urgencia: candidate.urgencia,
       })),
-      config
+      {
+        config,
+        queueEntryIds: Object.fromEntries(
+          candidates.map((candidate) => [candidate.cuidadorId, candidate.id])
+        ),
+      }
     );
 
-    const processedIds = result.circles
-      .flatMap((c) => c.members)
-      .map((m) => candidates.find((cand) => cand.cuidadorId === m.id)?.id)
+    const processedIds = workflowResult.circles
+      .flatMap((circle) => circle.members)
+      .map(
+        (member) => candidates.find((candidate) => candidate.cuidadorId === member.usuarioId)?.id
+      )
       .filter(Boolean);
 
     if (processedIds.length > 0) {
       waitingQueueService.markAsOffered(processedIds);
     }
 
-    const suggestions = result.circles.flatMap((circle) =>
-      circle.members.map((member) => {
-        const id = candidates.find((candidate) => candidate.cuidadorId === member.id)?.id;
-        const circleName = `Círculo ${circle.id}`;
-        return circleSuggestionService.createSuggestion({
-          cuidadorId: id || member.id,
-          circleId: circle.id,
-          circleName,
-          score: Number(circle.averageCompatibility || 0),
-          tipo: 'circle_suggestion',
-          estado: 'sent',
-          metadata: {
-            generatedFrom: 'waiting-queue/process',
-            circleSize: circle.members.length,
-          },
-        });
-      })
-    );
-
     res.status(201).json({
       data: {
-        circlesGenerated: result.circles.length,
-        circles: result.circles,
+        circlesGenerated: workflowResult.circles.length,
+        circles: workflowResult.circles,
         processedCount: processedIds.length,
-        waitlistCount: result.waitlist.length,
-        metrics: result.metrics,
-        suggestions,
+        waitlistCount: workflowResult.waitlist.length,
+        waitlist: workflowResult.waitlist,
+        metrics: workflowResult.metrics,
       },
     });
   } catch (error) {
@@ -550,6 +573,29 @@ app.get('/api/v1/circle-suggestions/:id', (req, res) => {
     res.json({ data: suggestion });
   } catch (error) {
     res.status(404).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-invitations', requireAuth(authService), (req, res) => {
+  try {
+    const invitations = circleWorkflowService.listInvitationsForCaregiver(req.auth.sub);
+    res.json({ data: invitations });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circle-invitations/:memberId/respond', requireAuth(authService), (req, res) => {
+  try {
+    const result = circleWorkflowService.respondToInvitation(
+      req.params.memberId,
+      req.auth.sub,
+      req.body?.response
+    );
+    res.json({ data: result });
+  } catch (error) {
+    const status = error.message === 'La invitación no pertenece a este usuario' ? 403 : 400;
+    res.status(status).json({ error: error.message });
   }
 });
 
