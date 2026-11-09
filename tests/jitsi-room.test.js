@@ -34,3 +34,35 @@ test('Jitsi iframe URLs encode room and participant names', async () => {
   assert.equal(url.searchParams.get('config.startWithVideoMuted'), 'false');
   assert.equal(url.searchParams.get('userInfo.displayName'), 'María & Ana');
 });
+
+test('buildFacilitatorSessionGuide creates the default 60-minute flow with a dynamic theme', async () => {
+  const { buildFacilitatorSessionGuide } = await import(helperUrl);
+  const guide = buildFacilitatorSessionGuide({
+    groupName: 'Círculo de apoyo',
+    theme: 'cuidado y límites',
+    totalMinutes: 60,
+  });
+
+  assert.equal(guide.title, 'Guion para Círculo de apoyo');
+  assert.equal(guide.totalMinutes, 60);
+  assert.deepEqual(
+    guide.sections.map((section) => section.name),
+    ['Check-in', 'Tema del día', 'Compartir', 'Cierre']
+  );
+  assert.equal(guide.sections.reduce((sum, section) => sum + section.minutes, 0), 60);
+  assert.match(guide.sections[1].prompt, /cuidado y límites/);
+});
+
+test('buildFacilitatorSessionGuide adapts the distribution when the session length changes', async () => {
+  const { buildFacilitatorSessionGuide } = await import(helperUrl);
+  const guide = buildFacilitatorSessionGuide({
+    groupName: 'Grupo nocturno',
+    theme: 'sueño y recuperación',
+    totalMinutes: 75,
+  });
+
+  assert.equal(guide.totalMinutes, 75);
+  assert.equal(guide.sections.reduce((sum, section) => sum + section.minutes, 0), 75);
+  assert.ok(guide.sections.some((section) => section.name === 'Tema del día' && section.minutes >= 15));
+  assert.match(guide.sections[1].prompt, /sueño y recuperación/);
+});
