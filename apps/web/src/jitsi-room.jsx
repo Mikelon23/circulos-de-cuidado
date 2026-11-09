@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { buildJitsiRoomName, createJitsiUrl, getJitsiRoomName } from './jitsi-room-utils.js';
+import {
+  buildFacilitatorSessionGuide,
+  buildJitsiRoomName,
+  createJitsiUrl,
+  getJitsiRoomName,
+} from './jitsi-room-utils.js';
 
 function getInitialDisplayName() {
   const savedUser = localStorage.getItem('currentUser');
@@ -19,6 +24,7 @@ export default function JitsiRoom() {
   );
   const [displayName, setDisplayName] = useState(getInitialDisplayName);
   const [shareMessage, setShareMessage] = useState('');
+  const [sessionTheme, setSessionTheme] = useState('cuidado y límites');
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -27,6 +33,12 @@ export default function JitsiRoom() {
       window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
     }
   }, [roomName]);
+
+  const sessionGuide = buildFacilitatorSessionGuide({
+    groupName: displayName || 'tu círculo',
+    theme: sessionTheme || 'cuidado y límites',
+    totalMinutes: 60,
+  });
 
   const jitsiUrl = createJitsiUrl(roomName, displayName);
   const shareUrl = new URL(window.location.pathname, window.location.origin);
@@ -90,34 +102,90 @@ export default function JitsiRoom() {
       </button>
       {shareMessage && <p role="status">{shareMessage}</p>}
 
-      <label style={{ display: 'block', margin: '1rem 0' }}>
-        Nombre visible en la videollamada
-        <input
-          type="text"
-          value={displayName}
-          onChange={(event) => setDisplayName(event.target.value || 'Cuidador')}
-          style={{ display: 'block', width: '100%', maxWidth: '420px', marginTop: '0.5rem' }}
-        />
-      </label>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: '1.5rem',
+          margin: '1.5rem 0',
+        }}
+      >
+        <label style={{ display: 'block' }}>
+          Nombre visible en la videollamada
+          <input
+            type="text"
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value || 'Cuidador')}
+            style={{ display: 'block', width: '100%', marginTop: '0.5rem' }}
+          />
+        </label>
+
+        <label style={{ display: 'block' }}>
+          Tema del día
+          <input
+            type="text"
+            value={sessionTheme}
+            onChange={(event) => setSessionTheme(event.target.value || 'cuidado y límites')}
+            style={{ display: 'block', width: '100%', marginTop: '0.5rem' }}
+          />
+        </label>
+      </div>
 
       <p role="note">
         Cualquier persona con el enlace puede entrar a esta sala pública de Jitsi. No compartas
         información sensible.
       </p>
 
-      <iframe
-        title="Sala de videollamada de Círculos de Cuidado"
-        src={jitsiUrl}
-        allow="camera; microphone; fullscreen; display-capture; speaker-selection;"
-        allowFullScreen
+      <div
         style={{
-          width: '100%',
-          minHeight: '70vh',
-          border: '0',
-          borderRadius: '18px',
-          background: '#edf2f7',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 2.1fr) minmax(260px, 0.9fr)',
+          gap: '1.5rem',
+          alignItems: 'start',
+          marginTop: '1.5rem',
         }}
-      />
+      >
+        <iframe
+          title="Sala de videollamada de Círculos de Cuidado"
+          src={jitsiUrl}
+          allow="camera; microphone; fullscreen; display-capture; speaker-selection;"
+          allowFullScreen
+          style={{
+            width: '100%',
+            minHeight: '70vh',
+            border: '0',
+            borderRadius: '18px',
+            background: '#edf2f7',
+          }}
+        />
+
+        <aside
+          aria-labelledby="facilitator-script-title"
+          style={{
+            background: '#f7fafd',
+            border: '1px solid #dfeaf4',
+            borderRadius: '18px',
+            padding: '1.25rem',
+          }}
+        >
+          <h2 id="facilitator-script-title" style={{ marginTop: 0 }}>
+            {sessionGuide.title}
+          </h2>
+          <p style={{ margin: '0.2rem 0 1rem', color: '#53657a' }}>
+            {sessionGuide.summary}
+          </p>
+          <ol style={{ paddingLeft: '1.1rem', margin: 0, display: 'grid', gap: '0.8rem' }}>
+            {sessionGuide.sections.map((section) => (
+              <li key={section.id} style={{ color: '#1f2d3d' }}>
+                <strong>
+                  {section.name} ({section.minutes} min)
+                </strong>
+                <div style={{ marginTop: '0.25rem', lineHeight: 1.5 }}>{section.prompt}</div>
+              </li>
+            ))}
+          </ol>
+        </aside>
+      </div>
     </main>
   );
 }
