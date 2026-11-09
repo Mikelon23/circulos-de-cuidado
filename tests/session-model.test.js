@@ -11,6 +11,7 @@ test('createSessionService implementa CRUD completo para sesiones', () => {
     titulo: 'Sesión de apoyo para cuidadores',
     fechaProgramada: '2026-08-05T18:00:00.000Z',
     duracionMinutos: 60,
+    reminderMinutes: 60,
     tipo: 'video',
     estado: 'programada',
     enlaceReunion: 'https://meet.example.com/session-001',
@@ -22,6 +23,7 @@ test('createSessionService implementa CRUD completo para sesiones', () => {
   assert.equal(created.titulo, 'Sesión de apoyo para cuidadores');
   assert.equal(created.tipo, 'video');
   assert.equal(created.estado, 'programada');
+  assert.equal(created.reminderMinutes, 60);
   assert.ok(created.id);
 
   const found = service.getSession(created.id);
@@ -46,4 +48,26 @@ test('createSessionService implementa CRUD completo para sesiones', () => {
   const deleted = service.deleteSession(created.id);
   assert.equal(deleted.id, created.id);
   assert.equal(service.listSessions().length, 0);
+});
+
+test('createSessionService valida la fecha y el intervalo del recordatorio', () => {
+  const service = createSessionService();
+  const basePayload = {
+    circleId: 'circle-001',
+    titulo: 'Sesión de apoyo',
+    fechaProgramada: '2026-08-05T18:00:00.000Z',
+    duracionMinutos: 60,
+  };
+
+  assert.throws(
+    () => service.createSession({ ...basePayload, fechaProgramada: 'fecha-inválida' }),
+    /La fecha programada no es válida/
+  );
+  assert.throws(
+    () => service.createSession({ ...basePayload, reminderMinutes: 30 }),
+    /El recordatorio debe configurarse/
+  );
+
+  const created = service.createSession({ ...basePayload, reminderMinutes: 0 });
+  assert.equal(created.reminderMinutes, 0);
 });

@@ -322,70 +322,12 @@ function StatCard({ label, value, tone = '#e7f2ff' }) {
   );
 }
 
-const sampleAgenda = [
-  {
-    id: 'agenda-1',
-    title: 'Cierre del ciclo de apoyo',
-    circle: 'Círculo de Madrid',
-    facilitator: 'Ana García',
-    date: '2026-11-09T18:30:00',
-    duration: '60 min',
-    type: 'video',
-    reminder: 'Recordatorio 24h',
-    notes: 'Compartir avances y cerrar tema de la semana.',
-  },
-  {
-    id: 'agenda-2',
-    title: 'Ritual de respiración',
-    circle: 'Círculo de Sevilla',
-    facilitator: 'Luis Ortega',
-    date: '2026-11-10T17:00:00',
-    duration: '45 min',
-    type: 'mixta',
-    reminder: 'Recordatorio 1h',
-    notes: 'Breathing exercise + check-in emocional breve.',
-  },
-  {
-    id: 'agenda-3',
-    title: 'Tema: comunicación con médicos',
-    circle: 'Círculo de Valencia',
-    facilitator: 'Elena Ruiz',
-    date: '2026-11-11T19:00:00',
-    duration: '75 min',
-    type: 'chat',
-    reminder: 'Recordatorio 24h',
-    notes: 'Estrategias para preparar preguntas y pedir apoyo.',
-  },
-  {
-    id: 'agenda-4',
-    title: 'Comunidad: intercambio de recursos',
-    circle: 'Círculo de Barcelona',
-    facilitator: 'Noelia Díaz',
-    date: '2026-11-13T18:00:00',
-    duration: '60 min',
-    type: 'video',
-    reminder: 'Recordatorio 1h',
-    notes: 'Compartir servicios, contactos y apoyo práctico.',
-  },
-  {
-    id: 'agenda-5',
-    title: 'Seguimiento individual',
-    circle: 'Acompañamiento 1:1',
-    facilitator: 'Yolanda Martín',
-    date: '2026-11-14T16:30:00',
-    duration: '30 min',
-    type: 'mixta',
-    reminder: 'Recordatorio 24h',
-    notes: 'Revisión de bienestar y ajustes de apoyo.',
-  },
-];
-
-function getWeekDates(anchorDate = new Date()) {
+function getWeekDates(anchorDate = new Date(), weekOffset = 0) {
   const start = new Date(anchorDate);
   start.setHours(0, 0, 0, 0);
   const dayOfWeek = start.getDay();
   const difference = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  start.setDate(start.getDate() + difference);
+  start.setDate(start.getDate() + difference + weekOffset * 7);
 
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(start);
@@ -394,34 +336,152 @@ function getWeekDates(anchorDate = new Date()) {
   });
 }
 
-function formatDateTime(dateString) {
+function formatDateTime(dateString, options = {}) {
   return new Intl.DateTimeFormat('es-ES', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    ...options,
   }).format(new Date(dateString));
 }
 
-function SessionAgenda() {
-  const weekDates = getWeekDates();
+function formatReminder(reminderMinutes) {
+  if (reminderMinutes === 1440) {
+    return '24 horas antes';
+  }
+  if (reminderMinutes === 60) {
+    return '1 hora antes';
+  }
+  return 'Sin recordatorio';
+}
 
+function toLocalDateTimeInput(date) {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function SessionAgenda() {
+  const [sessions, setSessions] = useState([]);
+  const [circles, setCircles] = useState([]);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [form, setForm] = useState({
+    circleId: '',
+    titulo: '',
+    fechaProgramada: toLocalDateTimeInput(new Date(Date.now() + 60 * 60 * 1000)),
+    duracionMinutos: '60',
+    tipo: 'video',
+    reminderMinutes: '1440',
+  });
+
+  useEffect(() => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      setError('Inicia sesión para consultar la agenda de tus círculos.');
+      setIsLoading(false);
+      return;
+    }
+
+    let active = true;
+    Promise.all([
+      authenticatedRequest('/api/v1/users/me', accessToken),
+      authenticatedRequest('/api/v1/circles', accessToken),
+      authenticatedRequest('/api/v1/circle-members', accessToken),
+      authenticatedRequest('/api/v1/sessions', accessToken),
+    ])
+      .then(([user, allCircles, members, scheduledSessions]) => {
+        if (!active) {
+          return;
+        }
+
+        const memberCircleIds = new Set(
+          members
+            .filter((member) => member.usuarioId === user.id && member.estado === 'activo')
+            .map((member) => member.circleId)
+        );
+        const availableCircles =
+          user.rol === 'admin'
+            ? allCircles
+            : allCircles.filter((circle) => memberCircleIds.has(circle.id));
+        setCircles(availableCircles);
+        setSessions(scheduledSessions);
+        setForm((current) => ({
+          ...current,
+          circleId: availableCircles[0]?.id || '',
+        }));
+        setError('');
+      })
+      .catch((requestError) => {
+        if (active) {
+          setError(requestError.message);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const weekDates = getWeekDates(new Date(), weekOffset);
   const scheduleByDay = weekDates.map((day) => ({
     date: day,
-    sessions: sampleAgenda.filter((session) => {
-      const sessionDate = new Date(session.date);
-      return (
-        sessionDate.getFullYear() === day.getFullYear() &&
-        sessionDate.getMonth() === day.getMonth() &&
-        sessionDate.getDate() === day.getDate()
-      );
-    }),
+    sessions: sessions
+      .filter((session) => {
+        const sessionDate = new Date(session.fechaProgramada);
+        return (
+          sessionDate.getFullYear() === day.getFullYear() &&
+          sessionDate.getMonth() === day.getMonth() &&
+          sessionDate.getDate() === day.getDate()
+        );
+      })
+      .sort((a, b) => new Date(a.fechaProgramada) - new Date(b.fechaProgramada)),
   }));
+  const visibleWeekSessions = scheduleByDay.flatMap(({ sessions: daySessions }) => daySessions);
+  const nextSession = sessions
+    .filter((session) => new Date(session.fechaProgramada) >= new Date())
+    .sort((a, b) => new Date(a.fechaProgramada) - new Date(b.fechaProgramada))[0];
+  const circleNames = new Map(circles.map((circle) => [circle.id, circle.nombre]));
+  const weekLabel = new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'long',
+  }).formatRange(weekDates[0], weekDates[6]);
 
-  const nextSession = [...sampleAgenda].sort(
-    (a, b) => new Date(a.date) - new Date(b.date)
-  )[0];
+  async function handleCreateSession(event) {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+    setIsSaving(true);
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      const created = await authenticatedRequest('/api/v1/sessions', accessToken, {
+        method: 'POST',
+        body: JSON.stringify({
+          ...form,
+          fechaProgramada: new Date(form.fechaProgramada).toISOString(),
+          duracionMinutos: Number(form.duracionMinutos),
+          reminderMinutes: Number(form.reminderMinutes),
+        }),
+      });
+      setSessions((current) => [...current, created]);
+      setIsFormOpen(false);
+      setMessage('La sesión quedó agendada correctamente.');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   return (
     <main
@@ -434,16 +494,132 @@ function SessionAgenda() {
       }}
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '1rem',
+            flexWrap: 'wrap',
+          }}
+        >
           <div>
             <a href="/" style={{ color: '#355c7d', textDecoration: 'none' }}>← Volver</a>
             <h1 style={{ margin: '0.75rem 0 0.35rem' }}>Agenda de sesiones</h1>
             <p style={{ margin: 0, color: '#54657a' }}>Calendario semanal con recordatorios</p>
           </div>
-          <button type="button" style={{ padding: '0.7rem 1rem', borderRadius: '10px', border: '1px solid #c7d3e3', background: '#fff' }}>
-            + Añadir sesión
+          <button
+            type="button"
+            onClick={() => setIsFormOpen((open) => !open)}
+            disabled={!circles.length}
+            style={{
+              padding: '0.7rem 1rem',
+              borderRadius: '10px',
+              border: '1px solid #c7d3e3',
+              background: '#fff',
+            }}
+          >
+            {isFormOpen ? 'Cancelar' : '+ Añadir sesión'}
           </button>
         </div>
+
+        {error && <p role="alert" style={{ color: '#a12b35' }}>{error}</p>}
+        {message && <p role="status">{message}</p>}
+        {isLoading && <p role="status">Cargando agenda…</p>}
+        {!isLoading && !error && !circles.length && (
+          <p role="status">Aún no perteneces a ningún círculo con sesiones.</p>
+        )}
+
+        {isFormOpen && (
+          <form
+            onSubmit={handleCreateSession}
+            style={{
+              background: '#fff',
+              border: '1px solid #dfeaf4',
+              borderRadius: '18px',
+              padding: '1.25rem',
+              marginTop: '1.5rem',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+              gap: '1rem',
+            }}
+          >
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
+              Círculo
+              <select
+                required
+                value={form.circleId}
+                onChange={(event) => setForm({ ...form, circleId: event.target.value })}
+              >
+                {circles.map((circle) => (
+                  <option key={circle.id} value={circle.id}>{circle.nombre}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
+              Título
+              <input
+                required
+                maxLength={120}
+                value={form.titulo}
+                onChange={(event) => setForm({ ...form, titulo: event.target.value })}
+              />
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
+              Fecha y hora
+              <input
+                required
+                type="datetime-local"
+                value={form.fechaProgramada}
+                onChange={(event) =>
+                  setForm({ ...form, fechaProgramada: event.target.value })
+                }
+              />
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
+              Duración (minutos)
+              <input
+                required
+                type="number"
+                min="1"
+                max="240"
+                value={form.duracionMinutos}
+                onChange={(event) =>
+                  setForm({ ...form, duracionMinutos: event.target.value })
+                }
+              />
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
+              Tipo
+              <select
+                value={form.tipo}
+                onChange={(event) => setForm({ ...form, tipo: event.target.value })}
+              >
+                <option value="video">Video</option>
+                <option value="chat">Chat</option>
+                <option value="mixta">Mixta</option>
+              </select>
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
+              Recordatorio
+              <select
+                value={form.reminderMinutes}
+                onChange={(event) =>
+                  setForm({ ...form, reminderMinutes: event.target.value })
+                }
+              >
+                <option value="1440">24 horas antes</option>
+                <option value="60">1 hora antes</option>
+                <option value="0">Sin recordatorio</option>
+              </select>
+            </label>
+            <div style={{ alignSelf: 'end' }}>
+              <button type="submit" disabled={isSaving}>
+                {isSaving ? 'Guardando…' : 'Guardar sesión'}
+              </button>
+            </div>
+          </form>
+        )}
 
         <section
           style={{
@@ -457,13 +633,27 @@ function SessionAgenda() {
             gap: '1rem',
           }}
         >
-          <StatCard label="Próxima sesión" value={nextSession ? nextSession.title : 'Sin sesión'} tone="#edf9f0" />
-          <StatCard label="Sesiones esta semana" value={sampleAgenda.length} tone="#e7f2ff" />
-          <StatCard label="Recordatorios" value="3 activos" tone="#fff5de" />
-          <StatCard label="Participación" value="92%" tone="#f5ebff" />
+          <StatCard
+            label="Próxima sesión"
+            value={nextSession ? formatDateTime(nextSession.fechaProgramada) : 'Sin sesión'}
+            tone="#edf9f0"
+          />
+          <StatCard label="Sesiones esta semana" value={visibleWeekSessions.length} tone="#e7f2ff" />
+          <StatCard
+            label="Recordatorios configurados"
+            value={visibleWeekSessions.filter((session) => session.reminderMinutes > 0).length}
+            tone="#fff5de"
+          />
         </section>
 
-        <section style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 2.2fr) minmax(260px, 0.9fr)', gap: '1.5rem' }}>
+        <section
+          style={{
+            marginTop: '2rem',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 2.2fr) minmax(260px, 0.9fr)',
+            gap: '1.5rem',
+          }}
+        >
           <div
             style={{
               background: '#fff',
@@ -472,8 +662,34 @@ function SessionAgenda() {
               padding: '1.25rem',
             }}
           >
-            <h2 style={{ marginTop: 0 }}>Semana</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(120px, 1fr))', gap: '0.75rem', overflowX: 'auto' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '0.75rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <h2 style={{ marginTop: 0 }}>Semana del {weekLabel}</h2>
+              <div>
+                <button type="button" onClick={() => setWeekOffset((offset) => offset - 1)}>
+                  Semana anterior
+                </button>{' '}
+                <button type="button" onClick={() => setWeekOffset(0)}>Esta semana</button>{' '}
+                <button type="button" onClick={() => setWeekOffset((offset) => offset + 1)}>
+                  Semana siguiente
+                </button>
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(7, minmax(120px, 1fr))',
+                gap: '0.75rem',
+                overflowX: 'auto',
+              }}
+            >
               {scheduleByDay.map(({ date, sessions }) => (
                 <div
                   key={date.toISOString()}
@@ -498,19 +714,26 @@ function SessionAgenda() {
                           key={session.id}
                           style={{
                             background: '#fff',
-                            borderLeft: session.type === 'video' ? '4px solid #5b8def' : session.type === 'chat' ? '4px solid #3fc28a' : '4px solid #f0b34a',
+                            borderLeft:
+                              session.tipo === 'video'
+                                ? '4px solid #5b8def'
+                                : session.tipo === 'chat'
+                                  ? '4px solid #3fc28a'
+                                  : '4px solid #f0b34a',
                             borderRadius: '10px',
                             padding: '0.7rem',
                             boxShadow: '0 1px 2px rgba(16,24,40,0.05)',
                           }}
                         >
-                          <div style={{ fontWeight: 700, lineHeight: 1.4 }}>{session.title}</div>
-                          <div style={{ color: '#53657a', fontSize: '0.8rem', marginTop: '0.2rem' }}>{session.circle}</div>
+                          <div style={{ fontWeight: 700, lineHeight: 1.4 }}>{session.titulo}</div>
+                          <div style={{ color: '#53657a', fontSize: '0.8rem', marginTop: '0.2rem' }}>
+                            {circleNames.get(session.circleId) || 'Círculo'}
+                          </div>
                           <div style={{ marginTop: '0.35rem', fontSize: '0.76rem', color: '#495c72' }}>
                             {new Intl.DateTimeFormat('es-ES', {
                               hour: '2-digit',
                               minute: '2-digit',
-                            }).format(new Date(session.date))} · {session.duration}
+                            }).format(new Date(session.fechaProgramada))} · {session.duracionMinutos} min
                           </div>
                         </article>
                       ))
@@ -533,25 +756,31 @@ function SessionAgenda() {
           >
             <h2 style={{ marginTop: 0 }}>Recordatorios</h2>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.9rem' }}>
-              {sampleAgenda.map((session) => (
-                <li
-                  key={session.id}
-                  style={{
-                    background: '#f7fafd',
-                    border: '1px solid #dfeaf4',
-                    borderRadius: '12px',
-                    padding: '0.85rem',
-                  }}
-                >
-                  <div style={{ fontWeight: 700 }}>{session.title}</div>
-                  <div style={{ color: '#53657a', fontSize: '0.85rem', marginTop: '0.2rem' }}>
-                    {session.reminder} · {formatDateTime(session.date)}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: '#5b6b7f', marginTop: '0.4rem' }}>
-                    Facilitador: {session.facilitator}
-                  </div>
-                </li>
-              ))}
+              {visibleWeekSessions
+                .filter((session) => session.reminderMinutes > 0)
+                .map((session) => (
+                  <li
+                    key={session.id}
+                    style={{
+                      background: '#f7fafd',
+                      border: '1px solid #dfeaf4',
+                      borderRadius: '12px',
+                      padding: '0.85rem',
+                    }}
+                  >
+                    <div style={{ fontWeight: 700 }}>{session.titulo}</div>
+                    <div style={{ color: '#53657a', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                      {formatReminder(session.reminderMinutes)} ·{' '}
+                      {formatDateTime(session.fechaProgramada)}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#5b6b7f', marginTop: '0.4rem' }}>
+                      {circleNames.get(session.circleId) || 'Círculo'}
+                    </div>
+                  </li>
+                ))}
+              {!visibleWeekSessions.some((session) => session.reminderMinutes > 0) && (
+                <li style={{ color: '#72829a' }}>No hay recordatorios para esta semana.</li>
+              )}
             </ul>
           </aside>
         </section>

@@ -14,6 +14,7 @@ import { createAdminDashboardService } from './admin-dashboard.cjs';
 import { createCircleSuggestionService } from './circle-suggestions.cjs';
 import { createCircleChangeService } from './circle-change.cjs';
 import { createCircleWorkflowService } from './circle-workflow.cjs';
+import { createSessionService } from './sessions.cjs';
 import {
   createCorsMiddleware,
   createInputSanitizationMiddleware,
@@ -32,6 +33,7 @@ const caregiverProfileService = createCaregiverProfileService();
 const circleService = createCircleService();
 const circleMemberService = createCircleMemberService();
 const facilitatorService = createFacilitatorService();
+const sessionService = createSessionService();
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
 const circleChangeService = createCircleChangeService();
@@ -284,6 +286,42 @@ app.delete('/api/v1/circles/:id', (req, res) => {
     res.json({ data: deleted });
   } catch (error) {
     res.status(404).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/sessions', requireAuth(authService), (req, res) => {
+  const activeMemberships = circleMemberService
+    .listMembers()
+    .filter((member) => member.usuarioId === req.auth.sub && member.estado === 'activo');
+  const allowedCircleIds = new Set(activeMemberships.map((member) => member.circleId));
+  const sessions =
+    req.auth.rol === 'admin'
+      ? sessionService.listSessions()
+      : sessionService.listSessions().filter((session) => allowedCircleIds.has(session.circleId));
+
+  res.json({ data: sessions });
+});
+
+app.post('/api/v1/sessions', requireAuth(authService), (req, res) => {
+  const circleId = String(req.body?.circleId || '').trim();
+  const isCircleMember = circleMemberService
+    .listMembers()
+    .some(
+      (member) =>
+        member.circleId === circleId &&
+        member.usuarioId === req.auth.sub &&
+        member.estado === 'activo'
+    );
+
+  if (req.auth.rol !== 'admin' && !isCircleMember) {
+    return res.status(403).json({ error: 'Debes ser miembro activo del círculo para agendar sesiones' });
+  }
+
+  try {
+    const created = sessionService.createSession(req.body || {});
+    return res.status(201).json({ data: created });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
   }
 });
 

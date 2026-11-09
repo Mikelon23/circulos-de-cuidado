@@ -61,7 +61,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  35 | Crear simulador de matching (dev tool)          | `/dev/matching`                | pendiente  |
 |  36 | Implementar creación de círculos                | Flujo end-to-end               | pendiente  |
 |  37 | Implementar sala de video (Jitsi)               | Componente React/Vue           | completado |
-|  38 | Implementar agenda de sesiones                  | Vista calendario               | pendiente  |
+|  38 | Implementar agenda de sesiones                  | Vista calendario               | completado |
 |  39 | Implementar guión de sesión para facilitador    | Template dinámico              | pendiente  |
 |  40 | Implementar timer de sesión                     | Componente en sala             | pendiente  |
 |  41 | Implementar chat asíncrono del círculo          | Chat tipo Slack/Discord        | pendiente  |
@@ -446,7 +446,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 38
 
 - id: 38
-- estado: pendiente
+- estado: completado
 - titulo: Implementar agenda de sesiones
 - objetivo: Calendario de sesiones semanales con recordatorios
 - entregable: Vista calendario
