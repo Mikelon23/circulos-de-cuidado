@@ -455,7 +455,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 39
 
 - id: 39
-- estado: pendiente
+- estado: completado
 - titulo: Implementar guión de sesión para facilitador
 - objetivo: Estructura: check-in (10min), tema del día (15min), compartir (25min), cierre (10min)
 - entregable: Template dinámico
