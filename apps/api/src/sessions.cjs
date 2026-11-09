@@ -39,6 +39,8 @@ function createSessionService() {
       const titulo = String(payload.titulo || '').trim();
       const fechaProgramada = payload.fechaProgramada ? String(payload.fechaProgramada) : null;
       const duracionMinutos = Number(payload.duracionMinutos);
+      const reminderMinutes =
+        payload.reminderMinutes === undefined ? 1440 : Number(payload.reminderMinutes);
       const tipo = normalizeType(payload.tipo);
       const estado = normalizeState(payload.estado);
       const enlaceReunion = payload.enlaceReunion ? String(payload.enlaceReunion).trim() : null;
@@ -56,8 +58,16 @@ function createSessionService() {
         throw new Error('La fecha programada es obligatoria');
       }
 
+      if (Number.isNaN(Date.parse(fechaProgramada))) {
+        throw new Error('La fecha programada no es válida');
+      }
+
       if (!Number.isInteger(duracionMinutos) || duracionMinutos < 1) {
         throw new Error('La duración en minutos debe ser un entero positivo');
+      }
+
+      if (![0, 60, 1440].includes(reminderMinutes)) {
+        throw new Error('El recordatorio debe configurarse para 1 hora, 24 horas o desactivarse');
       }
 
       if (tipo === null && payload.tipo !== undefined) {
@@ -76,6 +86,7 @@ function createSessionService() {
         titulo,
         fechaProgramada,
         duracionMinutos,
+        reminderMinutes,
         tipo: tipo || 'video',
         estado: estado || 'programada',
         enlaceReunion,
