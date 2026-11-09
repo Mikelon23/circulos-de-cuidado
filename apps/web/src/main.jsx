@@ -322,6 +322,244 @@ function StatCard({ label, value, tone = '#e7f2ff' }) {
   );
 }
 
+const sampleAgenda = [
+  {
+    id: 'agenda-1',
+    title: 'Cierre del ciclo de apoyo',
+    circle: 'Círculo de Madrid',
+    facilitator: 'Ana García',
+    date: '2026-11-09T18:30:00',
+    duration: '60 min',
+    type: 'video',
+    reminder: 'Recordatorio 24h',
+    notes: 'Compartir avances y cerrar tema de la semana.',
+  },
+  {
+    id: 'agenda-2',
+    title: 'Ritual de respiración',
+    circle: 'Círculo de Sevilla',
+    facilitator: 'Luis Ortega',
+    date: '2026-11-10T17:00:00',
+    duration: '45 min',
+    type: 'mixta',
+    reminder: 'Recordatorio 1h',
+    notes: 'Breathing exercise + check-in emocional breve.',
+  },
+  {
+    id: 'agenda-3',
+    title: 'Tema: comunicación con médicos',
+    circle: 'Círculo de Valencia',
+    facilitator: 'Elena Ruiz',
+    date: '2026-11-11T19:00:00',
+    duration: '75 min',
+    type: 'chat',
+    reminder: 'Recordatorio 24h',
+    notes: 'Estrategias para preparar preguntas y pedir apoyo.',
+  },
+  {
+    id: 'agenda-4',
+    title: 'Comunidad: intercambio de recursos',
+    circle: 'Círculo de Barcelona',
+    facilitator: 'Noelia Díaz',
+    date: '2026-11-13T18:00:00',
+    duration: '60 min',
+    type: 'video',
+    reminder: 'Recordatorio 1h',
+    notes: 'Compartir servicios, contactos y apoyo práctico.',
+  },
+  {
+    id: 'agenda-5',
+    title: 'Seguimiento individual',
+    circle: 'Acompañamiento 1:1',
+    facilitator: 'Yolanda Martín',
+    date: '2026-11-14T16:30:00',
+    duration: '30 min',
+    type: 'mixta',
+    reminder: 'Recordatorio 24h',
+    notes: 'Revisión de bienestar y ajustes de apoyo.',
+  },
+];
+
+function getWeekDates(anchorDate = new Date()) {
+  const start = new Date(anchorDate);
+  start.setHours(0, 0, 0, 0);
+  const dayOfWeek = start.getDay();
+  const difference = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  start.setDate(start.getDate() + difference);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    return date;
+  });
+}
+
+function formatDateTime(dateString) {
+  return new Intl.DateTimeFormat('es-ES', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(dateString));
+}
+
+function SessionAgenda() {
+  const weekDates = getWeekDates();
+
+  const scheduleByDay = weekDates.map((day) => ({
+    date: day,
+    sessions: sampleAgenda.filter((session) => {
+      const sessionDate = new Date(session.date);
+      return (
+        sessionDate.getFullYear() === day.getFullYear() &&
+        sessionDate.getMonth() === day.getMonth() &&
+        sessionDate.getDate() === day.getDate()
+      );
+    }),
+  }));
+
+  const nextSession = [...sampleAgenda].sort(
+    (a, b) => new Date(a.date) - new Date(b.date)
+  )[0];
+
+  return (
+    <main
+      style={{
+        fontFamily: 'sans-serif',
+        padding: '2rem',
+        color: '#1f2d3d',
+        background: '#f4f8fb',
+        minHeight: '100vh',
+      }}
+    >
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <div>
+            <a href="/" style={{ color: '#355c7d', textDecoration: 'none' }}>← Volver</a>
+            <h1 style={{ margin: '0.75rem 0 0.35rem' }}>Agenda de sesiones</h1>
+            <p style={{ margin: 0, color: '#54657a' }}>Calendario semanal con recordatorios</p>
+          </div>
+          <button type="button" style={{ padding: '0.7rem 1rem', borderRadius: '10px', border: '1px solid #c7d3e3', background: '#fff' }}>
+            + Añadir sesión
+          </button>
+        </div>
+
+        <section
+          style={{
+            background: '#fff',
+            borderRadius: '18px',
+            border: '1px solid #dfeaf4',
+            padding: '1.5rem',
+            marginTop: '1.5rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '1rem',
+          }}
+        >
+          <StatCard label="Próxima sesión" value={nextSession ? nextSession.title : 'Sin sesión'} tone="#edf9f0" />
+          <StatCard label="Sesiones esta semana" value={sampleAgenda.length} tone="#e7f2ff" />
+          <StatCard label="Recordatorios" value="3 activos" tone="#fff5de" />
+          <StatCard label="Participación" value="92%" tone="#f5ebff" />
+        </section>
+
+        <section style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'minmax(0, 2.2fr) minmax(260px, 0.9fr)', gap: '1.5rem' }}>
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '18px',
+              border: '1px solid #dfeaf4',
+              padding: '1.25rem',
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>Semana</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(120px, 1fr))', gap: '0.75rem', overflowX: 'auto' }}>
+              {scheduleByDay.map(({ date, sessions }) => (
+                <div
+                  key={date.toISOString()}
+                  style={{
+                    background: '#f7fafd',
+                    border: '1px solid #dfeaf4',
+                    borderRadius: '12px',
+                    minHeight: '220px',
+                    padding: '0.75rem',
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: '0.75rem' }}>
+                    {new Intl.DateTimeFormat('es-ES', { weekday: 'short' }).format(date)}
+                    <div style={{ color: '#5f7287', fontSize: '0.82rem' }}>
+                      {new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(date)}
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gap: '0.6rem' }}>
+                    {sessions.length ? (
+                      sessions.map((session) => (
+                        <article
+                          key={session.id}
+                          style={{
+                            background: '#fff',
+                            borderLeft: session.type === 'video' ? '4px solid #5b8def' : session.type === 'chat' ? '4px solid #3fc28a' : '4px solid #f0b34a',
+                            borderRadius: '10px',
+                            padding: '0.7rem',
+                            boxShadow: '0 1px 2px rgba(16,24,40,0.05)',
+                          }}
+                        >
+                          <div style={{ fontWeight: 700, lineHeight: 1.4 }}>{session.title}</div>
+                          <div style={{ color: '#53657a', fontSize: '0.8rem', marginTop: '0.2rem' }}>{session.circle}</div>
+                          <div style={{ marginTop: '0.35rem', fontSize: '0.76rem', color: '#495c72' }}>
+                            {new Intl.DateTimeFormat('es-ES', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            }).format(new Date(session.date))} · {session.duration}
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <div style={{ fontSize: '0.8rem', color: '#72829a' }}>Sin sesiones</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <aside
+            style={{
+              background: '#fff',
+              borderRadius: '18px',
+              border: '1px solid #dfeaf4',
+              padding: '1.25rem',
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>Recordatorios</h2>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.9rem' }}>
+              {sampleAgenda.map((session) => (
+                <li
+                  key={session.id}
+                  style={{
+                    background: '#f7fafd',
+                    border: '1px solid #dfeaf4',
+                    borderRadius: '12px',
+                    padding: '0.85rem',
+                  }}
+                >
+                  <div style={{ fontWeight: 700 }}>{session.title}</div>
+                  <div style={{ color: '#53657a', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                    {session.reminder} · {formatDateTime(session.date)}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#5b6b7f', marginTop: '0.4rem' }}>
+                    Facilitador: {session.facilitator}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        </section>
+      </div>
+    </main>
+  );
+}
+
 function App() {
   const [oauthError, setOauthError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(() =>
@@ -497,6 +735,9 @@ function App() {
     <main style={{ fontFamily: 'sans-serif', padding: '2rem', color: '#1f2d3d' }}>
       <h1>Círculos de Cuidado</h1>
       <p>Una base monorepo preparada para crecer con propósito.</p>
+      <button type="button" onClick={() => window.location.assign('/agenda')}>
+        Ver agenda de sesiones
+      </button>
       {oauthError && <p role="alert">No se pudo iniciar sesión: {oauthError}</p>}
       {isAuthenticated && <p role="status">Sesión iniciada correctamente.</p>}
 
@@ -697,7 +938,18 @@ const isJitsiRoute =
   window.location.pathname === '/sala/' ||
   window.location.pathname === '/video/';
 
-const RootApp = window.location.pathname === '/dev/matching' ? MatchingSimulator : isJitsiRoute ? JitsiRoom : App;
+const isAgendaRoute =
+  window.location.pathname === '/agenda' ||
+  window.location.pathname === '/agenda/';
+
+const RootApp =
+  window.location.pathname === '/dev/matching'
+    ? MatchingSimulator
+    : isJitsiRoute
+      ? JitsiRoom
+      : isAgendaRoute
+        ? SessionAgenda
+        : App;
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
