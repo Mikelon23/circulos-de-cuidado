@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   buildFacilitatorSessionGuide,
   buildJitsiRoomName,
+  buildSessionTimerState,
   createJitsiUrl,
+  formatSessionCountdown,
   getJitsiRoomName,
 } from './jitsi-room-utils.js';
 
@@ -25,6 +27,8 @@ export default function JitsiRoom() {
   const [displayName, setDisplayName] = useState(getInitialDisplayName);
   const [shareMessage, setShareMessage] = useState('');
   const [sessionTheme, setSessionTheme] = useState('cuidado y límites');
+  const [timerStartedAt, setTimerStartedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -34,11 +38,28 @@ export default function JitsiRoom() {
     }
   }, [roomName]);
 
-  const sessionGuide = buildFacilitatorSessionGuide({
-    groupName: displayName || 'tu círculo',
-    theme: sessionTheme || 'cuidado y límites',
-    totalMinutes: 60,
-  });
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const sessionGuide = useMemo(
+    () =>
+      buildFacilitatorSessionGuide({
+        groupName: displayName || 'tu círculo',
+        theme: sessionTheme || 'cuidado y límites',
+        totalMinutes: 60,
+      }),
+    [displayName, sessionTheme]
+  );
+
+  const sessionTimer = useMemo(
+    () => buildSessionTimerState(sessionGuide.sections, now, timerStartedAt),
+    [sessionGuide.sections, now, timerStartedAt]
+  );
+
+  const activeSection = sessionTimer.currentSection ?? sessionGuide.sections[0];
+  const phaseProgress = Math.min(100, Math.max(0, sessionTimer.progressRatio * 100));
 
   const jitsiUrl = createJitsiUrl(roomName, displayName);
   const shareUrl = new URL(window.location.pathname, window.location.origin);
@@ -60,6 +81,11 @@ export default function JitsiRoom() {
   function generateAnotherRoom() {
     setRoomName(buildJitsiRoomName());
     setShareMessage('');
+  }
+
+  function resetSessionTimer() {
+    setTimerStartedAt(Date.now());
+    setNow(Date.now());
   }
 
   return (
@@ -168,6 +194,58 @@ export default function JitsiRoom() {
             padding: '1.25rem',
           }}
         >
+          <div
+            style={{
+              background: '#eef7f7',
+              border: '1px solid #cde8e8',
+              borderRadius: '12px',
+              padding: '0.9rem 1rem',
+              marginBottom: '1rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Temporizador
+                </div>
+                <strong style={{ fontSize: '1.8rem', display: 'block', marginTop: '0.25rem' }}>
+                  {formatSessionCountdown(sessionTimer.remainingSeconds)}
+                </strong>
+              </div>
+              <button type="button" onClick={resetSessionTimer} style={{ alignSelf: 'center' }}>
+                Reiniciar
+              </button>
+            </div>
+            <div style={{ marginTop: '0.75rem', fontSize: '0.95rem' }}>
+              Fase actual: <strong>{activeSection.name}</strong>
+            </div>
+            <div style={{ marginTop: '0.35rem', color: '#53657a' }}>
+              {sessionTimer.isFinished
+                ? 'La sesión ha terminado.'
+                : `${formatSessionCountdown(sessionTimer.phaseRemainingSeconds)} restantes en esta fase`}
+            </div>
+            <div
+              aria-label="Progreso de la sesión"
+              style={{
+                width: '100%',
+                height: '10px',
+                background: '#dfeaf4',
+                borderRadius: '999px',
+                overflow: 'hidden',
+                marginTop: '0.8rem',
+              }}
+            >
+              <div
+                style={{
+                  width: `${phaseProgress}%`,
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #4DB7A6, #5A7AF7)',
+                  borderRadius: '999px',
+                }}
+              />
+            </div>
+          </div>
+
           <h2 id="facilitator-script-title" style={{ marginTop: 0 }}>
             {sessionGuide.title}
           </h2>
@@ -175,14 +253,27 @@ export default function JitsiRoom() {
             {sessionGuide.summary}
           </p>
           <ol style={{ paddingLeft: '1.1rem', margin: 0, display: 'grid', gap: '0.8rem' }}>
-            {sessionGuide.sections.map((section) => (
-              <li key={section.id} style={{ color: '#1f2d3d' }}>
-                <strong>
-                  {section.name} ({section.minutes} min)
-                </strong>
-                <div style={{ marginTop: '0.25rem', lineHeight: 1.5 }}>{section.prompt}</div>
-              </li>
-            ))}
+            {sessionGuide.sections.map((section, index) => {
+              const isActive = index === sessionTimer.currentIndex;
+              const isCompleted = index < sessionTimer.currentIndex || sessionTimer.isFinished;
+              return (
+                <li
+                  key={section.id}
+                  style={{
+                    color: '#1f2d3d',
+                    background: isActive ? '#e8f4ff' : isCompleted ? '#eefaf5' : 'transparent',
+                    border: isActive ? '1px solid #cfe2ff' : isCompleted ? '1px solid #d0f0e0' : '1px solid transparent',
+                    borderRadius: '10px',
+                    padding: isActive || isCompleted ? '0.45rem 0.6rem' : '0.2rem 0.1rem',
+                  }}
+                >
+                  <strong>
+                    {section.name} ({section.minutes} min)
+                  </strong>
+                  <div style={{ marginTop: '0.25rem', lineHeight: 1.5 }}>{section.prompt}</div>
+                </li>
+              );
+            })}
           </ol>
         </aside>
       </div>

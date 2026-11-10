@@ -66,3 +66,22 @@ test('buildFacilitatorSessionGuide adapts the distribution when the session leng
   assert.ok(guide.sections.some((section) => section.name === 'Tema del día' && section.minutes >= 15));
   assert.match(guide.sections[1].prompt, /sueño y recuperación/);
 });
+
+test('buildSessionTimerState tracks the current phase and countdown accurately', async () => {
+  const { buildSessionTimerState, formatSessionCountdown } = await import(helperUrl);
+  const guide = [
+    { id: 'one', name: 'Phase 1', minutes: 1 },
+    { id: 'two', name: 'Phase 2', minutes: 2 },
+  ];
+
+  const timer = buildSessionTimerState(guide, 45000, 0);
+  assert.equal(timer.currentIndex, 0);
+  assert.equal(timer.currentSection.name, 'Phase 1');
+  assert.equal(timer.phaseRemainingSeconds, 15);
+  assert.equal(formatSessionCountdown(timer.remainingSeconds), '00:02:15');
+
+  const secondPhase = buildSessionTimerState(guide, 90000, 0);
+  assert.equal(secondPhase.currentIndex, 1);
+  assert.equal(secondPhase.currentSection.name, 'Phase 2');
+  assert.equal(secondPhase.phaseRemainingSeconds, 90);
+});
