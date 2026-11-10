@@ -464,7 +464,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 40
 
 - id: 40
-- estado: pendiente
+- estado: completado
 - titulo: Implementar timer de sesión
 - objetivo: Cuenta regresiva visible para todos, cambio de fase automático
 - entregable: Componente en sala
