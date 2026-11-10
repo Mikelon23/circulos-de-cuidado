@@ -68,7 +68,6 @@ export function buildFacilitatorSessionGuide(options = {}) {
 
   const sections = DEFAULT_SESSION_TEMPLATE.map((section, index, allSections) => {
     const baseMinutes = section.minutes;
-    const remainingSections = allSections.length - index;
     const shouldUseRemaining = index === allSections.length - 1;
     const minutes = shouldUseRemaining
       ? Math.max(1, totalMinutes - allSections.slice(0, -1).reduce((sum, current) => sum + current.minutes, 0))
@@ -94,5 +93,74 @@ export function buildFacilitatorSessionGuide(options = {}) {
     totalMinutes,
     sections,
     summary: `Guion dinámico de ${totalMinutes} minutos para ${groupName}.`,
+  };
+}
+
+export function formatSessionCountdown(totalSeconds) {
+  const safeTotalSeconds = Math.max(0, Math.ceil(Number(totalSeconds) || 0));
+  const hours = Math.floor(safeTotalSeconds / 3600);
+  const minutes = Math.floor((safeTotalSeconds % 3600) / 60);
+  const seconds = safeTotalSeconds % 60;
+
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':');
+}
+
+export function buildSessionTimerState(sections, now = Date.now(), startedAt = now) {
+  const activities = Array.isArray(sections) ? sections : [];
+  const totalSeconds = activities.reduce(
+    (sum, section) => sum + Math.max(0, Number(section?.minutes ?? 0) * 60),
+    0
+  );
+
+  const elapsedSeconds = Math.max(0, (Number(now) - Number(startedAt)) / 1000);
+  let remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds);
+  let currentIndex = activities.length - 1;
+  let currentSection = activities[currentIndex] || null;
+  let currentSectionSeconds = 0;
+  let currentSectionElapsed = 0;
+
+  let cumulativeSeconds = 0;
+  for (let index = 0; index < activities.length; index += 1) {
+    const section = activities[index];
+    const durationSeconds = Math.max(0, Number(section?.minutes ?? 0) * 60);
+    const sectionEnd = cumulativeSeconds + durationSeconds;
+
+    if (elapsedSeconds <= sectionEnd) {
+      currentIndex = index;
+      currentSection = section;
+      currentSectionSeconds = durationSeconds;
+      currentSectionElapsed = Math.max(0, elapsedSeconds - cumulativeSeconds);
+      break;
+    }
+
+    cumulativeSeconds = sectionEnd;
+  }
+
+  if (!currentSection) {
+    currentSection = activities[0] || null;
+    currentIndex = 0;
+    currentSectionSeconds = 0;
+    currentSectionElapsed = 0;
+  }
+
+  remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds);
+  const phaseRemainingSeconds = currentSection
+    ? Math.max(0, currentSectionSeconds - currentSectionElapsed)
+    : 0;
+
+  const progressRatio = totalSeconds > 0 ? Math.min(1, elapsedSeconds / totalSeconds) : 0;
+
+  return {
+    totalSeconds,
+    elapsedSeconds,
+    remainingSeconds,
+    phaseRemainingSeconds,
+    currentIndex,
+    currentSection,
+    currentSectionSeconds,
+    currentSectionElapsed,
+    phaseName: currentSection?.name ?? null,
+    isFinished: elapsedSeconds >= totalSeconds,
+    progressRatio,
   };
 }
