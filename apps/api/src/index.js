@@ -15,6 +15,7 @@ import { createCircleSuggestionService } from './circle-suggestions.cjs';
 import { createCircleChangeService } from './circle-change.cjs';
 import { createCircleWorkflowService } from './circle-workflow.cjs';
 import { createSessionService } from './sessions.cjs';
+import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
   createInputSanitizationMiddleware,
@@ -34,6 +35,7 @@ const circleService = createCircleService();
 const circleMemberService = createCircleMemberService();
 const facilitatorService = createFacilitatorService();
 const sessionService = createSessionService();
+const messageService = createMessageService();
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
 const circleChangeService = createCircleChangeService();
@@ -322,6 +324,170 @@ app.post('/api/v1/sessions', requireAuth(authService), (req, res) => {
     return res.status(201).json({ data: created });
   } catch (error) {
     return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/messages', (req, res) => {
+  try {
+    const messages = messageService.listMessages({
+      circleId: req.query.circleId,
+      usuarioId: req.query.usuarioId,
+      replyToId: req.query.replyToId,
+      limit: req.query.limit,
+    });
+    res.json({ data: messages });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/messages', (req, res) => {
+  try {
+    const created = messageService.createMessage(req.body || {});
+    res.status(201).json({ data: created });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/messages/:id', (req, res) => {
+  try {
+    const message = messageService.getMessage(req.params.id);
+    res.json({ data: message });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/messages/:id', (req, res) => {
+  try {
+    const updated = messageService.updateMessage(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/messages/:id', (req, res) => {
+  try {
+    const deleted = messageService.deleteMessage(req.params.id);
+    res.json({ data: deleted });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-messages', (req, res) => {
+  try {
+    const messages = messageService.listMessages({
+      circleId: req.query.circleId,
+      usuarioId: req.query.usuarioId,
+      replyToId: req.query.replyToId,
+      limit: req.query.limit,
+    });
+    res.json({ data: messages });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circle-messages', (req, res) => {
+  try {
+    const created = messageService.createMessage(req.body || {});
+    res.status(201).json({ data: created });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circle-messages/:id', (req, res) => {
+  try {
+    const message = messageService.getMessage(req.params.id);
+    res.json({ data: message });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/circle-messages/:id', (req, res) => {
+  try {
+    const updated = messageService.updateMessage(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/circle-messages/:id', (req, res) => {
+  try {
+    const deleted = messageService.deleteMessage(req.params.id);
+    res.json({ data: deleted });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circles/:id/messages', (req, res) => {
+  try {
+    const messages = messageService.listMessages({
+      circleId: req.params.id,
+      usuarioId: req.query.usuarioId,
+      replyToId: req.query.replyToId,
+      limit: req.query.limit,
+    });
+    res.json({ data: messages });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circles/:id/messages', (req, res) => {
+  try {
+    const created = messageService.createMessage({
+      ...(req.body || {}),
+      circleId: req.params.id,
+    });
+    res.status(201).json({ data: created });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circles/:id/messages/:messageId', (req, res) => {
+  try {
+    const message = messageService.getMessage(req.params.messageId);
+    if (message.circleId !== req.params.id) {
+      return res.status(404).json({ error: 'Mensaje no encontrado en este círculo' });
+    }
+    return res.json({ data: message });
+  } catch (error) {
+    return res.status(404).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/circles/:id/messages/:messageId', (req, res) => {
+  try {
+    const current = messageService.getMessage(req.params.messageId);
+    if (current.circleId !== req.params.id) {
+      return res.status(404).json({ error: 'Mensaje no encontrado en este círculo' });
+    }
+    const updated = messageService.updateMessage(req.params.messageId, req.body || {});
+    return res.json({ data: updated });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/circles/:id/messages/:messageId', (req, res) => {
+  try {
+    const current = messageService.getMessage(req.params.messageId);
+    if (current.circleId !== req.params.id) {
+      return res.status(404).json({ error: 'Mensaje no encontrado en este círculo' });
+    }
+    const deleted = messageService.deleteMessage(req.params.messageId);
+    return res.json({ data: deleted });
+  } catch (error) {
+    return res.status(404).json({ error: error.message });
   }
 });
 
