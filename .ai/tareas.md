@@ -473,7 +473,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 41
 
 - id: 41
-- estado: pendiente
+- estado: completado
 - titulo: Implementar chat asíncrono del círculo
 - objetivo: Mensajería persistente entre sesiones, archivos, reacciones
 - entregable: Chat tipo Slack/Discord
