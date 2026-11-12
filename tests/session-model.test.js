@@ -71,3 +71,37 @@ test('createSessionService valida la fecha y el intervalo del recordatorio', () 
   const created = service.createSession({ ...basePayload, reminderMinutes: 0 });
   assert.equal(created.reminderMinutes, 0);
 });
+
+test('createSessionService admite historial con notas, temas y grabación', () => {
+  const service = createSessionService();
+
+  const created = service.createSession({
+    circleId: 'circle-archive',
+    titulo: 'Sesión de cierre',
+    fechaProgramada: '2026-08-10T19:00:00.000Z',
+    duracionMinutos: 75,
+    notas: 'Se revisaron las rutinas y los próximos pasos.',
+    temasTratados: ['duelo', 'rutina', 'apoyo emocional'],
+    grabacionConsent: true,
+    grabacionUrl: 'https://example.com/session-recording.mp4',
+  });
+
+  assert.deepEqual(created.temasTratados, ['duelo', 'rutina', 'apoyo emocional']);
+  assert.equal(created.grabacionConsent, true);
+  assert.equal(created.grabacionUrl, 'https://example.com/session-recording.mp4');
+  assert.equal(created.historial.grabacionConsent, true);
+  assert.deepEqual(service.getCircleHistory('circle-archive').length, 1);
+
+  const updated = service.updateSession(created.id, {
+    notas: 'Se añadió el resumen final.',
+    historial: {
+      temasTratados: ['apoyo emocional', 'sostén'],
+      grabacionConsent: true,
+      grabacionUrl: 'https://example.com/session-recording-v2.mp4',
+    },
+  });
+
+  assert.equal(updated.notas, 'Se añadió el resumen final.');
+  assert.deepEqual(updated.temasTratados, ['apoyo emocional', 'sostén']);
+  assert.equal(updated.grabacionUrl, 'https://example.com/session-recording-v2.mp4');
+});
