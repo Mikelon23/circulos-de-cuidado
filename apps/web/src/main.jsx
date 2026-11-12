@@ -362,6 +362,17 @@ function toLocalDateTimeInput(date) {
   return localDate.toISOString().slice(0, 16);
 }
 
+function parseTopics(value) {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(/[\n,;]+/)
+    .map((topic) => topic.trim())
+    .filter(Boolean);
+}
+
 function SessionAgenda() {
   const [sessions, setSessions] = useState([]);
   const [circles, setCircles] = useState([]);
@@ -378,6 +389,10 @@ function SessionAgenda() {
     duracionMinutos: '60',
     tipo: 'video',
     reminderMinutes: '1440',
+    notas: '',
+    temasTratados: '',
+    grabacionConsent: false,
+    grabacionUrl: '',
   });
 
   useEffect(() => {
@@ -456,6 +471,11 @@ function SessionAgenda() {
     day: 'numeric',
     month: 'long',
   }).formatRange(weekDates[0], weekDates[6]);
+  const circleHistory =
+    sessions
+      .filter((session) => session.circleId === form.circleId)
+      .filter((session) => new Date(session.fechaProgramada) <= new Date())
+      .sort((a, b) => new Date(b.fechaProgramada) - new Date(a.fechaProgramada)) || [];
 
   async function handleCreateSession(event) {
     event.preventDefault();
@@ -471,6 +491,9 @@ function SessionAgenda() {
           fechaProgramada: new Date(form.fechaProgramada).toISOString(),
           duracionMinutos: Number(form.duracionMinutos),
           reminderMinutes: Number(form.reminderMinutes),
+          temasTratados: parseTopics(form.temasTratados),
+          grabacionConsent: Boolean(form.grabacionConsent),
+          grabacionUrl: form.grabacionUrl.trim(),
         }),
       });
       setSessions((current) => [...current, created]);
@@ -612,6 +635,46 @@ function SessionAgenda() {
                 <option value="60">1 hora antes</option>
                 <option value="0">Sin recordatorio</option>
               </select>
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem', gridColumn: '1 / -1' }}>
+              Temas tratados
+              <textarea
+                rows={3}
+                value={form.temasTratados}
+                onChange={(event) => setForm({ ...form, temasTratados: event.target.value })}
+                placeholder="Ej: duelo, rutina, apoyo emocional"
+              />
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem', gridColumn: '1 / -1' }}>
+              Notas de la sesión
+              <textarea
+                rows={3}
+                value={form.notas}
+                onChange={(event) => setForm({ ...form, notas: event.target.value })}
+                placeholder="Resumen, acuerdos y próximos pasos..."
+              />
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={form.grabacionConsent}
+                  onChange={(event) =>
+                    setForm({ ...form, grabacionConsent: event.target.checked })
+                  }
+                />
+                Consentimiento para grabación
+              </span>
+            </label>
+            <label style={{ display: 'grid', gap: '0.35rem' }}>
+              Enlace de grabación
+              <input
+                type="url"
+                value={form.grabacionUrl}
+                onChange={(event) => setForm({ ...form, grabacionUrl: event.target.value })}
+                placeholder="https://..."
+                disabled={!form.grabacionConsent}
+              />
             </label>
             <div style={{ alignSelf: 'end' }}>
               <button type="submit" disabled={isSaving}>
@@ -782,6 +845,56 @@ function SessionAgenda() {
                 <li style={{ color: '#72829a' }}>No hay recordatorios para esta semana.</li>
               )}
             </ul>
+
+            <div style={{ marginTop: '1.5rem' }}>
+              <h2 style={{ marginTop: 0 }}>Historial por círculo</h2>
+              {circleHistory.length ? (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '0.9rem' }}>
+                  {circleHistory.map((session) => (
+                    <li
+                      key={session.id}
+                      style={{
+                        background: '#f7fafd',
+                        border: '1px solid #dfeaf4',
+                        borderRadius: '12px',
+                        padding: '0.85rem',
+                      }}
+                    >
+                      <div style={{ fontWeight: 700 }}>{session.titulo}</div>
+                      <div style={{ color: '#53657a', fontSize: '0.8rem', marginTop: '0.2rem' }}>
+                        {formatDateTime(session.fechaProgramada)}
+                      </div>
+                      {session.temasTratados?.length ? (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#485d73' }}>
+                          <strong>Temas:</strong> {session.temasTratados.join(', ')}
+                        </div>
+                      ) : null}
+                      {session.notas ? (
+                        <div style={{ marginTop: '0.5rem', color: '#53657a', fontSize: '0.8rem' }}>
+                          <strong>Notas:</strong> {session.notas}
+                        </div>
+                      ) : null}
+                      {session.grabacionConsent && session.grabacionUrl ? (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          <a href={session.grabacionUrl} target="_blank" rel="noreferrer">
+                            Ver grabación
+                          </a>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: '#72829a' }}>
+                          Grabación no autorizada o sin enlace.
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ margin: 0, color: '#72829a' }}>
+                  No hay historial para este círculo todavía. Las notas y grabaciones se mostrará aquí
+                  cuando se registren.
+                </p>
+              )}
+            </div>
           </aside>
         </section>
       </div>

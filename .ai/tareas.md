@@ -491,7 +491,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 43
 
 - id: 43
-- estado: pendiente
+- estado: completado
 - titulo: Implementar historial de sesiones
 - objetivo: Grabaciones (opcional, consentimiento), notas, temas tratados
 - entregable: Archivo por círculo

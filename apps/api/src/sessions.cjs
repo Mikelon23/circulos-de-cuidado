@@ -21,9 +21,63 @@ function normalizeState(state) {
   return VALID_STATES.has(normalized) ? normalized : null;
 }
 
+function normalizeBoolean(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', 'yes', 'si', 'sí', '1', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['false', 'no', '0', 'off'].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return null;
+}
+
+function normalizeTopics(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(/[\n,;]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  if (value === undefined || value === null || value === '') {
+    return [];
+  }
+
+  return [String(value).trim()].filter(Boolean);
+}
+
 function sanitizeSession(session) {
+  const historial = {
+    notas: session.notas || null,
+    temasTratados: Array.isArray(session.temasTratados) ? [...session.temasTratados] : [],
+    grabacionConsent: Boolean(session.grabacionConsent),
+    grabacionUrl: session.grabacionUrl || null,
+    recordingConsent: Boolean(session.grabacionConsent),
+    recordingUrl: session.grabacionUrl || null,
+  };
+
   return {
     ...session,
+    temasTratados: historial.temasTratados,
+    grabacionConsent: historial.grabacionConsent,
+    grabacionUrl: historial.grabacionUrl,
+    recordingConsent: historial.recordingConsent,
+    recordingUrl: historial.recordingUrl,
+    historial,
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
   };
@@ -44,7 +98,36 @@ function createSessionService() {
       const tipo = normalizeType(payload.tipo);
       const estado = normalizeState(payload.estado);
       const enlaceReunion = payload.enlaceReunion ? String(payload.enlaceReunion).trim() : null;
-      const notas = payload.notas ? String(payload.notas).trim() : null;
+      const sourceHistory = payload.historial && typeof payload.historial === 'object' ? payload.historial : {};
+      const notas =
+        payload.notas !== undefined
+          ? String(payload.notas || '').trim() || null
+          : sourceHistory.notas !== undefined
+            ? String(sourceHistory.notas || '').trim() || null
+            : null;
+      const temasTratados = normalizeTopics(
+        payload.temasTratados !== undefined ? payload.temasTratados : sourceHistory.temasTratados
+      );
+      const grabacionConsent =
+        normalizeBoolean(
+          payload.grabacionConsent !== undefined
+            ? payload.grabacionConsent
+            : payload.recordingConsent !== undefined
+              ? payload.recordingConsent
+              : sourceHistory.grabacionConsent !== undefined
+                ? sourceHistory.grabacionConsent
+                : sourceHistory.recordingConsent
+        ) ?? false;
+      const grabacionUrl =
+        payload.grabacionUrl !== undefined
+          ? String(payload.grabacionUrl || '').trim() || null
+          : payload.recordingUrl !== undefined
+            ? String(payload.recordingUrl || '').trim() || null
+            : sourceHistory.grabacionUrl !== undefined
+              ? String(sourceHistory.grabacionUrl || '').trim() || null
+              : sourceHistory.recordingUrl !== undefined
+                ? String(sourceHistory.recordingUrl || '').trim() || null
+                : null;
 
       if (!circleId) {
         throw new Error('El identificador del círculo es obligatorio');
@@ -91,6 +174,9 @@ function createSessionService() {
         estado: estado || 'programada',
         enlaceReunion,
         notas,
+        temasTratados,
+        grabacionConsent,
+        grabacionUrl,
         createdAt: now,
         updatedAt: now,
       };
@@ -116,6 +202,18 @@ function createSessionService() {
       return sessions.map((session) => sanitizeSession(session));
     },
 
+    getCircleHistory(circleId) {
+      const normalized = String(circleId || '').trim();
+      if (!normalized) {
+        throw new Error('El identificador del círculo es obligatorio');
+      }
+
+      return sessions
+        .filter((session) => session.circleId === normalized)
+        .sort((a, b) => new Date(b.fechaProgramada) - new Date(a.fechaProgramada))
+        .map((session) => sanitizeSession(session));
+    },
+
     updateSession(sessionId, updates = {}) {
       if (!sessionId) {
         throw new Error('El identificador de la sesión es obligatorio');
@@ -126,6 +224,8 @@ function createSessionService() {
         throw new Error('Sesión no encontrada');
       }
 
+      const sourceHistory =
+        updates.historial && typeof updates.historial === 'object' ? updates.historial : {};
       const next = {
         ...session,
         circleId:
@@ -167,11 +267,39 @@ function createSessionService() {
               ? String(updates.enlaceReunion).trim()
               : null,
         notas:
-          updates.notas === undefined
-            ? session.notas
-            : updates.notas
+          updates.notas !== undefined
+            ? updates.notas
               ? String(updates.notas).trim()
-              : null,
+              : null
+            : sourceHistory.notas !== undefined
+              ? String(sourceHistory.notas || '').trim() || null
+              : session.notas,
+        temasTratados:
+          updates.temasTratados !== undefined
+            ? normalizeTopics(updates.temasTratados)
+            : sourceHistory.temasTratados !== undefined
+              ? normalizeTopics(sourceHistory.temasTratados)
+              : session.temasTratados || [],
+        grabacionConsent:
+          updates.grabacionConsent !== undefined
+            ? normalizeBoolean(updates.grabacionConsent) ?? false
+            : updates.recordingConsent !== undefined
+              ? normalizeBoolean(updates.recordingConsent) ?? false
+              : sourceHistory.grabacionConsent !== undefined
+                ? normalizeBoolean(sourceHistory.grabacionConsent) ?? false
+                : sourceHistory.recordingConsent !== undefined
+                  ? normalizeBoolean(sourceHistory.recordingConsent) ?? false
+                  : Boolean(session.grabacionConsent),
+        grabacionUrl:
+          updates.grabacionUrl !== undefined
+            ? String(updates.grabacionUrl || '').trim() || null
+            : updates.recordingUrl !== undefined
+              ? String(updates.recordingUrl || '').trim() || null
+              : sourceHistory.grabacionUrl !== undefined
+                ? String(sourceHistory.grabacionUrl || '').trim() || null
+                : sourceHistory.recordingUrl !== undefined
+                  ? String(sourceHistory.recordingUrl || '').trim() || null
+                  : session.grabacionUrl || null,
       };
 
       if (!next.circleId) {
@@ -196,6 +324,10 @@ function createSessionService() {
 
       if (next.estado === null && updates.estado !== undefined) {
         throw new Error('El estado de la sesión no es válido');
+      }
+
+      if (next.grabacionConsent && !next.grabacionUrl) {
+        next.grabacionUrl = session.grabacionUrl || null;
       }
 
       const updated = {

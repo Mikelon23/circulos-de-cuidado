@@ -304,6 +304,74 @@ app.get('/api/v1/sessions', requireAuth(authService), (req, res) => {
   res.json({ data: sessions });
 });
 
+app.get('/api/v1/sessions/:id', requireAuth(authService), (req, res) => {
+  try {
+    const session = sessionService.getSession(req.params.id);
+    const isCircleMember = circleMemberService
+      .listMembers()
+      .some(
+        (member) =>
+          member.circleId === session.circleId &&
+          member.usuarioId === req.auth.sub &&
+          member.estado === 'activo'
+      );
+
+    if (req.auth.rol !== 'admin' && !isCircleMember) {
+      return res.status(403).json({ error: 'No tienes acceso a esta sesión' });
+    }
+
+    return res.json({ data: session });
+  } catch (error) {
+    return res.status(404).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/sessions/:id', requireAuth(authService), (req, res) => {
+  try {
+    const current = sessionService.getSession(req.params.id);
+    const isCircleMember = circleMemberService
+      .listMembers()
+      .some(
+        (member) =>
+          member.circleId === current.circleId &&
+          member.usuarioId === req.auth.sub &&
+          member.estado === 'activo'
+      );
+
+    if (req.auth.rol !== 'admin' && !isCircleMember) {
+      return res.status(403).json({ error: 'No tienes permisos para actualizar esta sesión' });
+    }
+
+    const updated = sessionService.updateSession(req.params.id, req.body || {});
+    return res.json({ data: updated });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/sessions/:id', requireAuth(authService), (req, res) => {
+  try {
+    const current = sessionService.getSession(req.params.id);
+    const isCircleMember = circleMemberService
+      .listMembers()
+      .some(
+        (member) =>
+          member.circleId === current.circleId &&
+          member.usuarioId === req.auth.sub &&
+          member.estado === 'activo'
+      );
+
+    if (req.auth.rol !== 'admin' && !isCircleMember) {
+      return res.status(403).json({ error: 'No tienes permisos para eliminar esta sesión' });
+    }
+
+    const deleted = sessionService.deleteSession(req.params.id);
+    return res.json({ data: deleted });
+  } catch (error) {
+    return res.status(404).json({ error: error.message });
+  }
+});
+
 app.post('/api/v1/sessions', requireAuth(authService), (req, res) => {
   const circleId = String(req.body?.circleId || '').trim();
   const isCircleMember = circleMemberService
@@ -322,6 +390,28 @@ app.post('/api/v1/sessions', requireAuth(authService), (req, res) => {
   try {
     const created = sessionService.createSession(req.body || {});
     return res.status(201).json({ data: created });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circles/:id/history', requireAuth(authService), (req, res) => {
+  try {
+    const circleId = req.params.id;
+    const isCircleMember = circleMemberService
+      .listMembers()
+      .some(
+        (member) =>
+          member.circleId === circleId &&
+          member.usuarioId === req.auth.sub &&
+          member.estado === 'activo'
+      );
+
+    if (req.auth.rol !== 'admin' && !isCircleMember) {
+      return res.status(403).json({ error: 'No tienes acceso al historial de este círculo' });
+    }
+
+    return res.json({ data: sessionService.getCircleHistory(circleId) });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
