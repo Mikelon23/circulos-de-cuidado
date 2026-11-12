@@ -31,8 +31,17 @@ test('Jitsi iframe URLs encode room and participant names', async () => {
   assert.equal(url.origin, 'https://meet.jit.si');
   assert.equal(url.pathname, '/circulo-123');
   assert.equal(url.searchParams.get('config.startWithAudioMuted'), 'true');
+  assert.equal(url.searchParams.get('config.startSilent'), 'true');
   assert.equal(url.searchParams.get('config.startWithVideoMuted'), 'false');
   assert.equal(url.searchParams.get('userInfo.displayName'), 'María & Ana');
+});
+
+test('listener mode can be disabled so the participant can speak', async () => {
+  const { createJitsiUrl } = await import(helperUrl);
+  const url = new URL(createJitsiUrl('circulo-123', 'María & Ana', { listenerMode: false }));
+
+  assert.equal(url.searchParams.get('config.startWithAudioMuted'), 'false');
+  assert.equal(url.searchParams.get('config.startSilent'), 'false');
 });
 
 test('buildFacilitatorSessionGuide creates the default 60-minute flow with a dynamic theme', async () => {
