@@ -289,6 +289,10 @@ export default function JitsiRoom() {
     () => getJitsiRoomName(window.location.search) || buildJitsiRoomName()
   );
   const [displayName, setDisplayName] = useState(getInitialDisplayName);
+  const [isListenerMode, setIsListenerMode] = useState(() => {
+    const savedMode = localStorage.getItem('listenerMode');
+    return savedMode === null ? true : savedMode === 'true';
+  });
   const [shareMessage, setShareMessage] = useState('');
   const [sessionTheme, setSessionTheme] = useState('cuidado y límites');
   const [timerStartedAt, setTimerStartedAt] = useState(() => Date.now());
@@ -306,6 +310,10 @@ export default function JitsiRoom() {
     const intervalId = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('listenerMode', String(isListenerMode));
+  }, [isListenerMode]);
 
   const sessionGuide = useMemo(
     () =>
@@ -325,7 +333,7 @@ export default function JitsiRoom() {
   const activeSection = sessionTimer.currentSection ?? sessionGuide.sections[0];
   const phaseProgress = Math.min(100, Math.max(0, sessionTimer.progressRatio * 100));
 
-  const jitsiUrl = createJitsiUrl(roomName, displayName);
+  const jitsiUrl = createJitsiUrl(roomName, displayName, { listenerMode: isListenerMode });
   const shareUrl = new URL(window.location.pathname, window.location.origin);
   shareUrl.searchParams.set('room', roomName);
 
@@ -420,6 +428,33 @@ export default function JitsiRoom() {
           />
         </label>
       </div>
+
+      <label
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.65rem',
+          background: isListenerMode ? '#edf9f4' : '#f7fafd',
+          border: `1px solid ${isListenerMode ? '#cfe9d8' : '#dfeaf4'}`,
+          borderRadius: '999px',
+          padding: '0.65rem 0.9rem',
+          fontWeight: 600,
+          cursor: 'pointer',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={isListenerMode}
+          onChange={(event) => setIsListenerMode(event.target.checked)}
+        />
+        Modo oyente
+      </label>
+
+      <p role="note" style={{ marginTop: '0.75rem' }}>
+        {isListenerMode
+          ? 'Estás en modo oyente: puedes escuchar sin presión para hablar, manteniendo el micrófono en silencio.'
+          : 'Micrófono activo: puedes participar con voz durante la sesión.'}
+      </p>
 
       <p role="note">
         Cualquier persona con el enlace puede entrar a esta sala pública de Jitsi. No compartas

@@ -482,7 +482,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 42
 
 - id: 42
-- estado: pendiente
+- estado: completado
 - titulo: Implementar "modo oyente"
 - objetivo: Participante puede unirse en silencio, sin presión de hablar
 - entregable: Toggle en sesión
