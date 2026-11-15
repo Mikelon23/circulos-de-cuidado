@@ -68,7 +68,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  42 | Implementar "modo oyente"                       | Toggle en sesión               | pendiente  |
 |  43 | Implementar historial de sesiones               | Archivo por círculo            | pendiente  |
 |  44 | Implementar asistencia y engagement             | Métricas por usuario           | completado |
-|  45 | Crear sistema de "ritual de respiro"            | Contenido + player             | pendiente  |
+|  45 | Crear sistema de "ritual de respiro"            | Contenido + player             | completado |
 |  46 | Implementar feedback post-sesión                | Modal post-sesión              | pendiente  |
 |  47 | Implementar alerta de abandono                  | Sistema de alertas             | pendiente  |
 |  48 | Crear biblioteca de temas de sesión             | CMS básico                     | pendiente  |
@@ -509,7 +509,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 45
 
 - id: 45
-- estado: pendiente
+- estado: completado
 - titulo: Crear sistema de "ritual de respiro"
 - objetivo: Sesiones guiadas de 15 min: respiración, meditación, caminata virtual
 - entregable: Contenido + player

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import JitsiRoom from './jitsi-room.jsx';
+import BreathingRitual from './breathing-ritual.jsx';
 import { buildJitsiRoomName } from './jitsi-room-utils.js';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -1096,6 +1097,9 @@ function App() {
       <button type="button" onClick={() => window.location.assign('/agenda')}>
         Ver agenda de sesiones
       </button>
+      <button type="button" onClick={() => window.location.assign('/respiro')}>
+        Hacer un ritual de respiro
+      </button>
       {oauthError && <p role="alert">No se pudo iniciar sesión: {oauthError}</p>}
       {isAuthenticated && <p role="status">Sesión iniciada correctamente.</p>}
 
@@ -1299,10 +1303,15 @@ const isJitsiRoute =
 const isAgendaRoute =
   window.location.pathname === '/agenda' ||
   window.location.pathname === '/agenda/';
+const isBreathingRitualRoute =
+  window.location.pathname === '/respiro' ||
+  window.location.pathname === '/respiro/';
 
 const RootApp =
   window.location.pathname === '/dev/matching'
     ? MatchingSimulator
+    : isBreathingRitualRoute
+      ? BreathingRitual
     : isJitsiRoute
       ? JitsiRoom
       : isAgendaRoute
