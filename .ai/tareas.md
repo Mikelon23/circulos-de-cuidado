@@ -67,7 +67,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  41 | Implementar chat asíncrono del círculo          | Chat tipo Slack/Discord        | pendiente  |
 |  42 | Implementar "modo oyente"                       | Toggle en sesión               | pendiente  |
 |  43 | Implementar historial de sesiones               | Archivo por círculo            | pendiente  |
-|  44 | Implementar asistencia y engagement             | Métricas por usuario           | pendiente  |
+|  44 | Implementar asistencia y engagement             | Métricas por usuario           | completado |
 |  45 | Crear sistema de "ritual de respiro"            | Contenido + player             | pendiente  |
 |  46 | Implementar feedback post-sesión                | Modal post-sesión              | pendiente  |
 |  47 | Implementar alerta de abandono                  | Sistema de alertas             | pendiente  |
@@ -500,7 +500,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 44
 
 - id: 44
-- estado: pendiente
+- estado: completado
 - titulo: Implementar asistencia y engagement
 - objetivo: Tracking de asistencia, participación, tiempo conectado
 - entregable: Métricas por usuario

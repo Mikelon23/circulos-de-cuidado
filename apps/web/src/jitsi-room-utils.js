@@ -49,6 +49,11 @@ export function getJitsiRoomName(search) {
   return roomName && ROOM_NAME_PATTERN.test(roomName) ? roomName : null;
 }
 
+export function getJitsiSessionId(search) {
+  const sessionId = new URLSearchParams(search).get('session');
+  return sessionId && ROOM_NAME_PATTERN.test(sessionId) ? sessionId : null;
+}
+
 export function createJitsiUrl(roomName, displayName, options = {}) {
   const { listenerMode = true } = options;
   const url = new URL(`https://meet.jit.si/${encodeURIComponent(roomName)}`);

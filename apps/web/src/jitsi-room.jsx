@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildFacilitatorSessionGuide,
   buildJitsiRoomName,
@@ -6,9 +6,52 @@ import {
   createJitsiUrl,
   formatSessionCountdown,
   getJitsiRoomName,
+  getJitsiSessionId,
 } from './jitsi-room-utils.js';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+let jitsiExternalApiPromise;
+
+function loadJitsiExternalApi() {
+  if (window.JitsiMeetExternalAPI) {
+    return Promise.resolve();
+  }
+  if (!jitsiExternalApiPromise) {
+    jitsiExternalApiPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://meet.jit.si/external_api.js';
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => {
+        jitsiExternalApiPromise = null;
+        reject(new Error('No se pudo cargar la integración de video.'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return jitsiExternalApiPromise;
+}
+
+async function updateSessionAttendance(sessionId, action) {
+  const accessToken = localStorage.getItem('accessToken');
+  if (!accessToken) {
+    throw new Error('Inicia sesión para registrar tu asistencia a esta sesión.');
+  }
+
+  const response = await fetch(
+    `${apiUrl}/api/v1/sessions/${encodeURIComponent(sessionId)}/attendance/${action}`,
+    {
+      method: 'POST',
+      keepalive: action === 'leave',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body.error || 'No se pudo actualizar el registro de asistencia.');
+  }
+  return body.data;
+}
 
 function getInitialDisplayName() {
   const savedUser = localStorage.getItem('currentUser');
@@ -285,9 +328,13 @@ function CircleChatPanel({ circleId, displayName }) {
 }
 
 export default function JitsiRoom() {
+  const sessionId = getJitsiSessionId(window.location.search);
   const [roomName, setRoomName] = useState(
-    () => getJitsiRoomName(window.location.search) || buildJitsiRoomName()
+    () =>
+      getJitsiRoomName(window.location.search) ||
+      (sessionId ? `session-${sessionId}` : buildJitsiRoomName())
   );
+  const [jitsiUnavailable, setJitsiUnavailable] = useState(false);
   const [displayName, setDisplayName] = useState(getInitialDisplayName);
   const [isListenerMode, setIsListenerMode] = useState(() => {
     const savedMode = localStorage.getItem('listenerMode');
@@ -297,6 +344,89 @@ export default function JitsiRoom() {
   const [sessionTheme, setSessionTheme] = useState('cuidado y límites');
   const [timerStartedAt, setTimerStartedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
+  const jitsiContainerRef = useRef(null);
+  const [attendanceStatus, setAttendanceStatus] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    let api;
+    let attendanceStarted = false;
+    let localParticipantId = null;
+
+    function showAttendanceStatus(message) {
+      if (active) {
+        setAttendanceStatus(message);
+      }
+    }
+
+    async function leaveSession() {
+      if (!sessionId || !attendanceStarted) return;
+      attendanceStarted = false;
+      try {
+        await updateSessionAttendance(sessionId, 'leave');
+        showAttendanceStatus('Tu asistencia y tiempo conectado quedaron registrados.');
+      } catch (error) {
+        showAttendanceStatus(error.message);
+      }
+    }
+
+    async function initializeJitsi() {
+      try {
+        await loadJitsiExternalApi();
+        if (!active || !jitsiContainerRef.current) return;
+
+        api = new window.JitsiMeetExternalAPI('meet.jit.si', {
+          roomName,
+          parentNode: jitsiContainerRef.current,
+          width: '100%',
+          height: '70vh',
+          userInfo: { displayName },
+          configOverwrite: {
+            startWithAudioMuted: isListenerMode,
+            startSilent: isListenerMode,
+            startWithVideoMuted: false,
+          },
+        });
+
+        api.addListener('videoConferenceJoined', async ({ id }) => {
+          localParticipantId = id;
+          if (!sessionId) return;
+          try {
+            await updateSessionAttendance(sessionId, 'join');
+            attendanceStarted = true;
+            if (!active) {
+              await leaveSession();
+              return;
+            }
+            showAttendanceStatus('Asistencia registrada. El tiempo conectado se está midiendo.');
+          } catch (error) {
+            showAttendanceStatus(error.message);
+          }
+        });
+        api.addListener('videoConferenceLeft', () => {
+          void leaveSession();
+        });
+        api.addListener('dominantSpeakerChanged', ({ id }) => {
+          if (!sessionId || !attendanceStarted || id !== localParticipantId) return;
+          updateSessionAttendance(sessionId, 'participation').catch((error) => {
+            showAttendanceStatus(error.message);
+          });
+        });
+      } catch (error) {
+        if (active) {
+          setJitsiUnavailable(true);
+          showAttendanceStatus(`${error.message} Se abrirá la sala en modo compatible.`);
+        }
+      }
+    }
+
+    void initializeJitsi();
+    return () => {
+      active = false;
+      void leaveSession();
+      if (api) api.dispose();
+    };
+  }, [displayName, isListenerMode, roomName, sessionId]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -336,6 +466,7 @@ export default function JitsiRoom() {
   const jitsiUrl = createJitsiUrl(roomName, displayName, { listenerMode: isListenerMode });
   const shareUrl = new URL(window.location.pathname, window.location.origin);
   shareUrl.searchParams.set('room', roomName);
+  if (sessionId) shareUrl.searchParams.set('session', sessionId);
 
   async function copyRoomLink() {
     setShareMessage('');
@@ -351,6 +482,7 @@ export default function JitsiRoom() {
   }
 
   function generateAnotherRoom() {
+    if (sessionId) return;
     setRoomName(buildJitsiRoomName());
     setShareMessage('');
   }
@@ -377,8 +509,8 @@ export default function JitsiRoom() {
           <a href="/">← Volver a Círculos de Cuidado</a>
           <h1 style={{ marginBottom: '0.5rem' }}>Sala de video</h1>
         </div>
-        <button type="button" onClick={generateAnotherRoom}>
-          Generar otra sala
+        <button type="button" onClick={generateAnotherRoom} disabled={Boolean(sessionId)}>
+          {sessionId ? 'Sala vinculada a la sesión' : 'Generar otra sala'}
         </button>
       </div>
 
@@ -399,6 +531,12 @@ export default function JitsiRoom() {
         Copiar enlace
       </button>
       {shareMessage && <p role="status">{shareMessage}</p>}
+
+      {attendanceStatus && (
+        <p role="status" style={{ color: attendanceStatus.includes('No se pudo') ? '#a33' : '#53657a' }}>
+          {attendanceStatus}
+        </p>
+      )}
 
       <div
         style={{
@@ -470,19 +608,27 @@ export default function JitsiRoom() {
           marginTop: '1.5rem',
         }}
       >
-        <iframe
-          title="Sala de videollamada de Círculos de Cuidado"
-          src={jitsiUrl}
-          allow="camera; microphone; fullscreen; display-capture; speaker-selection;"
-          allowFullScreen
+        <div
+          ref={jitsiContainerRef}
+          aria-label="Sala de videollamada de Círculos de Cuidado"
           style={{
             width: '100%',
             minHeight: '70vh',
-            border: '0',
             borderRadius: '18px',
+            overflow: 'hidden',
             background: '#edf2f7',
           }}
-        />
+        >
+          {jitsiUnavailable && (
+            <iframe
+              title="Sala de videollamada de Círculos de Cuidado"
+              src={jitsiUrl}
+              allow="camera; microphone; fullscreen; display-capture; speaker-selection;"
+              allowFullScreen
+              style={{ width: '100%', minHeight: '70vh', border: '0' }}
+            />
+          )}
+        </div>
 
         <div style={{ display: 'grid', gap: '1.5rem' }}>
           <aside

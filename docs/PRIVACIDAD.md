@@ -14,7 +14,8 @@ Esta Política de Privacidad describe cómo "Círculos de Cuidado" recopila, usa
 - Datos de identificación: nombre, email, avatar (opcional).
 - Datos del perfil de cuidador: edad, relación con la persona cuidada, enfermedades o condiciones relevantes, fase del cuidado, geografía y disponibilidad horaria.
 - Datos de autenticación: hash de contraseña, tokens de sesión (no almacenamos contraseñas en texto claro).
-- Datos de uso: registros de actividad, logs de eventos y métricas de uso anónimas.
+- Datos de uso: asistencia a sesiones, tiempo conectado y número de participaciones. Estas métricas
+  se usan para acompañamiento y mejora del servicio; no se graba ni transcribe el audio.
 - Datos opcionales: información que el usuario decide añadir en su perfil o durante interacciones (notas, preferencias, etc.).
 
 3. Finalidades del tratamiento
@@ -33,6 +34,9 @@ Esta Política de Privacidad describe cómo "Círculos de Cuidado" recopila, usa
 
 - Solo recopilamos los datos estrictamente necesarios para las finalidades declaradas.
 - Cuando sea posible, los datos se almacenan de forma anonimizada o pseudonimizada (por ejemplo, para análisis y métricas).
+- Las métricas de asistencia se limitan al identificador de usuario, sesión, marcas de entrada/salida,
+  tiempo total conectado y contador de participaciones; se comparten solo con la propia persona y el
+  facilitador asignado o administración.
 
 6. Derechos del usuario
 

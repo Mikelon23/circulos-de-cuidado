@@ -7,12 +7,19 @@ const repoRoot = path.resolve(__dirname, '..');
 const apiRoot = path.join(repoRoot, 'apps', 'api');
 const prismaRoot = path.join(apiRoot, 'prisma');
 const migrationFile = path.join(prismaRoot, 'migrations', '20260730_init', 'migration.sql');
+const attendanceMigrationFile = path.join(
+  prismaRoot,
+  'migrations',
+  '20261114_session_attendance',
+  'migration.sql'
+);
 const schemaFile = path.join(prismaRoot, 'schema.prisma');
 const packageJsonPath = path.join(apiRoot, 'package.json');
 
 test('la API expone un esquema Prisma y una migración inicial ejecutable', () => {
   assert.ok(fs.existsSync(schemaFile), 'debe existir schema.prisma');
   assert.ok(fs.existsSync(migrationFile), 'debe existir la migración inicial');
+  assert.ok(fs.existsSync(attendanceMigrationFile), 'debe existir la migración de asistencia');
 
   const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   assert.ok(pkg.scripts?.['db:migrate'], 'debe existir un script para ejecutar migraciones');
