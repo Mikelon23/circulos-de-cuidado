@@ -506,6 +506,13 @@ function SessionAgenda() {
     }
   }
 
+  function openScheduledSession(session) {
+    const roomName = `session-${session.id}`;
+    window.location.assign(
+      `/sala?room=${encodeURIComponent(roomName)}&session=${encodeURIComponent(session.id)}`
+    );
+  }
+
   return (
     <main
       style={{
@@ -798,6 +805,15 @@ function SessionAgenda() {
                               minute: '2-digit',
                             }).format(new Date(session.fechaProgramada))} · {session.duracionMinutos} min
                           </div>
+                          {session.tipo !== 'chat' && (
+                            <button
+                              type="button"
+                              onClick={() => openScheduledSession(session)}
+                              style={{ marginTop: '0.6rem' }}
+                            >
+                              Entrar a la sala
+                            </button>
+                          )}
                         </article>
                       ))
                     ) : (

@@ -18,10 +18,12 @@ test('Jitsi room names are normalized and unique', async () => {
 });
 
 test('a valid room query can be reused by everyone joining the link', async () => {
-  const { getJitsiRoomName } = await import(helperUrl);
+  const { getJitsiRoomName, getJitsiSessionId } = await import(helperUrl);
 
   assert.equal(getJitsiRoomName('?room=circulos-de-cuidado-abc123'), 'circulos-de-cuidado-abc123');
   assert.equal(getJitsiRoomName('?room=not%2Fa%2Froom'), null);
+  assert.equal(getJitsiSessionId('?session=ab12-cd34_ef'), 'ab12-cd34_ef');
+  assert.equal(getJitsiSessionId('?session=invalid%2Fid'), null);
 });
 
 test('Jitsi iframe URLs encode room and participant names', async () => {

@@ -121,6 +121,25 @@ Reuniones o encuentros del círculo.
 | created_at | TIMESTAMP | Sí | Fecha de creación. |
 | updated_at | TIMESTAMP | Sí | Fecha de última actualización. |
 
+### asistencias_sesion
+
+Resumen de asistencia y participación de cada persona en una sesión. Los intervalos de conexión
+se acumulan si la persona vuelve a entrar a la misma sesión.
+
+| Campo | Tipo | Obligatorio | Descripción |
+| --- | --- | --- | --- |
+| id | UUID | Sí | Identificador único. |
+| sesion_id | UUID | Sí | FK a `sesiones.id`. |
+| usuario_id | UUID | Sí | FK a `usuarios.id`. |
+| primera_entrada | TIMESTAMP | No | Primera conexión registrada. |
+| ultima_entrada | TIMESTAMP | No | Inicio de la conexión más reciente. |
+| ultima_salida | TIMESTAMP | No | Salida más reciente. |
+| segundos_conectado | INTEGER | Sí | Tiempo acumulado conectado. |
+| numero_conexiones | INTEGER | Sí | Número de conexiones a la sesión. |
+| numero_participaciones | INTEGER | Sí | Cambios a hablante dominante registrados para el usuario. |
+| created_at | TIMESTAMP | Sí | Fecha de creación. |
+| updated_at | TIMESTAMP | Sí | Fecha de última actualización. |
+
 ### mensajes
 
 Mensajes del chat asíncrono del círculo.
@@ -169,10 +188,12 @@ erDiagram
   USUARIOS ||--o{ MIEMBROS_CIRCULO : participa_en
   USUARIOS ||--o{ MENSAJES : escribe
   USUARIOS ||--o{ CHECK_INS_EMOCIONALES : registra
+  USUARIOS ||--o{ ASISTENCIAS_SESION : asiste
 
   CIRCULOS ||--o{ MIEMBROS_CIRCULO : incluye
   CIRCULOS ||--o{ SESIONES : organiza
   CIRCULOS ||--o{ MENSAJES : contiene
+  SESIONES ||--o{ ASISTENCIAS_SESION : registra
 
   FACILITADORES ||--o{ CIRCULOS : facilita
   FACILITADORES ||--o{ SESIONES : coordina

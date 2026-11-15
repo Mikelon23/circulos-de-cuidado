@@ -28,6 +28,7 @@ model usuarios {
   miembros_circulo   miembros_circulo[]
   mensajes           mensajes[]
   check_ins          check_ins_emocionales[]
+  asistencias        asistencias_sesion[]
 
   @@map("usuarios")
 }
@@ -124,8 +125,30 @@ model sesiones {
 
   circulo     circulos @relation(fields: [circulo_id], references: [id], onDelete: Cascade)
   facilitador  facilitadores? @relation(fields: [facilitador_id], references: [id], onDelete: SetNull)
+  asistencias asistencias_sesion[]
 
   @@map("sesiones")
+}
+
+model asistencias_sesion {
+  id                      String    @id @default(uuid()) @db.Uuid
+  sesion_id               String    @db.Uuid
+  usuario_id              String    @db.Uuid
+  primera_entrada         DateTime?
+  ultima_entrada          DateTime?
+  ultima_salida            DateTime?
+  segundos_conectado      Int       @default(0)
+  numero_conexiones       Int       @default(0)
+  numero_participaciones  Int       @default(0)
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+
+  sesion  sesiones @relation(fields: [sesion_id], references: [id], onDelete: Cascade)
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@unique([sesion_id, usuario_id])
+  @@index([usuario_id])
+  @@map("asistencias_sesion")
 }
 
 model mensajes {

@@ -15,6 +15,7 @@ import { createCircleSuggestionService } from './circle-suggestions.cjs';
 import { createCircleChangeService } from './circle-change.cjs';
 import { createCircleWorkflowService } from './circle-workflow.cjs';
 import { createSessionService } from './sessions.cjs';
+import { createAttendanceService } from './attendance.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -35,6 +36,9 @@ const circleService = createCircleService();
 const circleMemberService = createCircleMemberService();
 const facilitatorService = createFacilitatorService();
 const sessionService = createSessionService();
+const attendanceService = createAttendanceService({
+  getSession: (id) => sessionService.getSession(id),
+});
 const messageService = createMessageService();
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
@@ -392,6 +396,104 @@ app.post('/api/v1/sessions', requireAuth(authService), (req, res) => {
     return res.status(201).json({ data: created });
   } catch (error) {
     return res.status(400).json({ error: error.message });
+  }
+});
+
+function getSessionAccess(session, userId, role) {
+  const isCircleMember = circleMemberService.listMembers().some(
+    (member) =>
+      member.circleId === session.circleId &&
+      member.usuarioId === userId &&
+      member.estado === 'activo'
+  );
+  const isAssignedFacilitator = facilitatorService.listFacilitators().some(
+    (facilitator) =>
+      facilitator.id === session.facilitadorId && facilitator.usuarioId === userId
+  );
+
+  return {
+    canAttend: role === 'admin' || isCircleMember || isAssignedFacilitator,
+    canViewAll: role === 'admin' || isAssignedFacilitator,
+  };
+}
+
+app.post('/api/v1/sessions/:id/attendance/join', requireAuth(authService), (req, res) => {
+  try {
+    const session = sessionService.getSession(req.params.id);
+    const access = getSessionAccess(session, req.auth.sub, req.auth.rol);
+    if (!access.canAttend) {
+      return res.status(403).json({ error: 'No tienes acceso a esta sesión' });
+    }
+    if (session.estado === 'cancelada') {
+      return res.status(400).json({ error: 'No se puede registrar asistencia a una sesión cancelada' });
+    }
+
+    return res.json({
+      data: attendanceService.recordJoin(session.id, req.auth.sub),
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/sessions/:id/attendance/leave', requireAuth(authService), (req, res) => {
+  try {
+    const session = sessionService.getSession(req.params.id);
+    const access = getSessionAccess(session, req.auth.sub, req.auth.rol);
+    if (!access.canAttend) {
+      return res.status(403).json({ error: 'No tienes acceso a esta sesión' });
+    }
+
+    return res.json({
+      data: attendanceService.recordLeave(session.id, req.auth.sub),
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.post(
+  '/api/v1/sessions/:id/attendance/participation',
+  requireAuth(authService),
+  (req, res) => {
+    try {
+      const session = sessionService.getSession(req.params.id);
+      const access = getSessionAccess(session, req.auth.sub, req.auth.rol);
+      if (!access.canAttend) {
+        return res.status(403).json({ error: 'No tienes acceso a esta sesión' });
+      }
+
+      return res.json({
+        data: attendanceService.recordParticipation(session.id, req.auth.sub),
+      });
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
+);
+
+app.get('/api/v1/sessions/:id/attendance', requireAuth(authService), (req, res) => {
+  try {
+    const session = sessionService.getSession(req.params.id);
+    const access = getSessionAccess(session, req.auth.sub, req.auth.rol);
+    if (!access.canAttend) {
+      return res.status(403).json({ error: 'No tienes acceso a esta sesión' });
+    }
+
+    const data = access.canViewAll
+      ? attendanceService.getSessionAttendance(
+          session.id,
+          circleMemberService
+            .listMembers()
+            .filter(
+              (member) => member.circleId === session.circleId && member.estado === 'activo'
+            )
+            .map((member) => member.usuarioId)
+        )
+      : attendanceService.getUserAttendance(session.id, req.auth.sub);
+    return res.json({ data });
+  } catch (error) {
+    return res.status(404).json({ error: error.message });
   }
 });
 
