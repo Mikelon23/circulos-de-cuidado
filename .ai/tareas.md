@@ -69,10 +69,10 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  43 | Implementar historial de sesiones               | Archivo por círculo            | pendiente  |
 |  44 | Implementar asistencia y engagement             | Métricas por usuario           | completado |
 |  45 | Crear sistema de "ritual de respiro"            | Contenido + player             | completado |
-|  46 | Implementar feedback post-sesión                | Modal post-sesión              | pendiente  |
-|  47 | Implementar alerta de abandono                  | Sistema de alertas             | pendiente  |
-|  48 | Crear biblioteca de temas de sesión             | CMS básico                     | pendiente  |
-|  49 | Implementar check-in diario                     | Widget diario                  | pendiente  |
+|  46 | Implementar feedback post-sesión                | Modal post-sesión              | completado |
+|  47 | Implementar alerta de abandono                  | Sistema de alertas             | completado |
+|  48 | Crear biblioteca de temas de sesión             | CMS básico                     | completado |
+|  49 | Implementar check-in diario                     | Widget diario                  | completado |
 |  50 | Implementar historial de check-ins              | Vista de progreso              | pendiente  |
 |  51 | Implementar detección de patrones de riesgo     | Algoritmo + notificación       | pendiente  |
 |  52 | Implementar "momento de gratitud"               | Micro-interacción              | pendiente  |
@@ -536,7 +536,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 48
 
 - id: 48
-- estado: pendiente
+- estado: completado
 - titulo: Crear biblioteca de temas de sesión
 - objetivo: Temas predefinidos: "Manejo de la culpa", "Comunicación con médicos", "Cuando ya no puedes más"
 - entregable: CMS básico
@@ -547,7 +547,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 49
 
 - id: 49
-- estado: pendiente
+- estado: completado
 - titulo: Implementar check-in diario
 - objetivo: Pregunta: "¿Cómo te sientes hoy?" + escala 1-10 + emoji + nota opcional
 - entregable: Widget diario

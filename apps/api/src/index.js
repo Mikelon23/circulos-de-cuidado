@@ -17,6 +17,8 @@ import { createCircleWorkflowService } from './circle-workflow.cjs';
 import { createSessionService } from './sessions.cjs';
 import { createAttendanceService } from './attendance.cjs';
 import { createAbandonmentAlertService } from './abandonment-alerts.cjs';
+import { createSessionThemeService } from './session-themes.cjs';
+import { createCheckInEmotionalService } from './check-ins.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -41,6 +43,8 @@ const attendanceService = createAttendanceService({
   getSession: (id) => sessionService.getSession(id),
 });
 const messageService = createMessageService();
+const sessionThemeService = createSessionThemeService();
+const checkInEmotionalService = createCheckInEmotionalService();
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
 const circleChangeService = createCircleChangeService();
@@ -187,6 +191,32 @@ app.get('/api/v1/users/me', requireAuth(authService), (req, res) => {
   }
 
   return res.json({ data: user });
+});
+
+app.post('/api/v1/check-ins', requireAuth(authService), (req, res) => {
+  try {
+    const created = checkInEmotionalService.createCheckIn({
+      usuarioId: req.auth.sub,
+      pregunta: req.body?.pregunta || '¿Cómo te sientes hoy?',
+      escala: req.body?.escala ?? req.body?.score,
+      nota: req.body?.nota,
+      emoji: req.body?.emoji,
+      respondidoEn: req.body?.respondidoEn,
+    });
+
+    return res.status(201).json({ data: created });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/check-ins/me', requireAuth(authService), (req, res) => {
+  try {
+    const history = checkInEmotionalService.listCheckInsByUser(req.auth.sub);
+    return res.json({ data: history });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
 });
 
 app.patch('/api/v1/users/me/profile', requireAuth(authService), (req, res) => {
@@ -801,6 +831,41 @@ app.get('/api/v1/admin/dashboard', (_req, res) => {
     res.json({ data: dashboard });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/session-themes', (_req, res) => {
+  try {
+    res.json({ data: sessionThemeService.listThemes({ includeInactive: true }) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/session-themes', requireAuth(authService), requireAdmin, (req, res) => {
+  try {
+    const created = sessionThemeService.createTheme(req.body || {});
+    res.status(201).json({ data: created });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.patch('/api/v1/session-themes/:id', requireAuth(authService), requireAdmin, (req, res) => {
+  try {
+    const updated = sessionThemeService.updateTheme(req.params.id, req.body || {});
+    res.json({ data: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/session-themes/:id', requireAuth(authService), requireAdmin, (req, res) => {
+  try {
+    const deleted = sessionThemeService.deleteTheme(req.params.id);
+    res.json({ data: deleted });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 

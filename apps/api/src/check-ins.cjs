@@ -3,6 +3,7 @@ const crypto = require('node:crypto');
 function sanitizeCheckIn(checkIn) {
   return {
     ...checkIn,
+    emoji: checkIn.emoji ?? null,
     createdAt: checkIn.createdAt,
     updatedAt: checkIn.updatedAt,
   };
@@ -17,6 +18,7 @@ function createCheckInEmotionalService() {
       const pregunta = String(payload.pregunta || '').trim();
       const escala = Number(payload.escala);
       const nota = payload.nota ? String(payload.nota).trim() : null;
+      const emoji = payload.emoji ? String(payload.emoji).trim() : null;
       const respondidoEn = payload.respondidoEn ? String(payload.respondidoEn) : new Date().toISOString();
 
       if (!usuarioId) {
@@ -38,6 +40,7 @@ function createCheckInEmotionalService() {
         pregunta,
         escala,
         nota,
+        emoji,
         respondidoEn,
         createdAt: now,
         updatedAt: now,
@@ -106,6 +109,8 @@ function createCheckInEmotionalService() {
             : updates.nota
               ? String(updates.nota).trim()
               : null,
+        emoji:
+          updates.emoji === undefined ? checkIn.emoji : updates.emoji ? String(updates.emoji).trim() : null,
         respondidoEn:
           updates.respondidoEn === undefined
             ? checkIn.respondidoEn

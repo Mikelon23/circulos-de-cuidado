@@ -3,6 +3,11 @@ import ReactDOM from 'react-dom/client';
 import JitsiRoom from './jitsi-room.jsx';
 import BreathingRitual from './breathing-ritual.jsx';
 import { buildJitsiRoomName } from './jitsi-room-utils.js';
+import {
+  DAILY_CHECK_IN_QUESTION,
+  getMoodOption,
+  normalizeDailyCheckInInput,
+} from './daily-check-in-utils.js';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -63,6 +68,154 @@ async function authenticatedRequest(path, accessToken, options = {}) {
 
 async function fetchCircleInvitations(accessToken) {
   return authenticatedRequest('/api/v1/circle-invitations', accessToken);
+}
+
+function DailyCheckInWidget({ currentUser }) {
+  const [moodScore, setMoodScore] = useState(7);
+  const [note, setNote] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!window.localStorage) {
+      return;
+    }
+
+    try {
+      const saved = JSON.parse(localStorage.getItem('dailyCheckIn') || 'null');
+      if (saved && Number.isInteger(saved.escala)) {
+        setMoodScore(Number(saved.escala));
+        setNote(saved.nota || '');
+      }
+    } catch {
+      localStorage.removeItem('dailyCheckIn');
+    }
+  }, []);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setStatusMessage('');
+    setErrorMessage('');
+    setIsSaving(true);
+
+    try {
+      const mood = getMoodOption(moodScore);
+      const normalizedInput = normalizeDailyCheckInInput({
+        escala: moodScore,
+        nota: note,
+        emoji: mood.emoji,
+      });
+
+      const payload = {
+        ...normalizedInput,
+        usuarioId: currentUser?.id ?? 'local-user',
+      };
+
+      if (currentUser) {
+        const accessToken = localStorage.getItem('accessToken');
+        const created = await authenticatedRequest('/api/v1/check-ins', accessToken, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        localStorage.setItem('dailyCheckIn', JSON.stringify(created));
+        setStatusMessage(`Gracias por cuidar tu bienestar. Registro guardado con ${created.escala}/10.`);
+      } else {
+        const stored = {
+          ...payload,
+          createdAt: new Date().toISOString(),
+        };
+        localStorage.setItem('dailyCheckIn', JSON.stringify(stored));
+        setStatusMessage('Tu check-in se guardó localmente. Inicia sesión para sincronizarlo.');
+      }
+    } catch (error) {
+      const fallback = {
+        ...normalizeDailyCheckInInput({
+          escala: moodScore,
+          nota: note,
+          emoji: getMoodOption(moodScore).emoji,
+        }),
+        usuarioId: currentUser?.id ?? 'local-user',
+        createdAt: new Date().toISOString(),
+      };
+
+      localStorage.setItem('dailyCheckIn', JSON.stringify(fallback));
+      setStatusMessage('No se pudo sincronizar con la API; el registro quedó guardado localmente.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  const selectedMood = getMoodOption(moodScore);
+
+  return (
+    <section
+      aria-labelledby="daily-checkin-title"
+      style={{
+        margin: '2rem 0',
+        padding: '1.5rem',
+        background: '#fffaf3',
+        borderRadius: '16px',
+        border: '1px solid #f3d9a8',
+      }}
+    >
+      <h2 id="daily-checkin-title">Check-in diario</h2>
+      <p style={{ marginTop: 0, color: '#53657a' }}>{DAILY_CHECK_IN_QUESTION}</p>
+
+      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
+        <div>
+          <div style={{ marginBottom: '0.75rem', fontWeight: 600 }}>
+            {selectedMood.emoji} {selectedMood.label}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setMoodScore(value)}
+                aria-pressed={moodScore === value}
+                style={{
+                  minWidth: '2.5rem',
+                  minHeight: '2.5rem',
+                  borderRadius: '999px',
+                  border: moodScore === value ? '2px solid #4d9a8b' : '1px solid #dfeaf4',
+                  background: moodScore === value ? '#edf9f4' : '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label style={{ display: 'grid', gap: '0.5rem', fontWeight: 600 }}>
+          Nota opcional
+          <textarea
+            aria-label="Nota opcional del check-in diario"
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            rows={3}
+            placeholder="¿Qué te gustaría llevar contigo hoy?"
+            style={{
+              padding: '0.75rem',
+              border: '1px solid #dfeaf4',
+              borderRadius: '10px',
+              fontFamily: 'sans-serif',
+            }}
+          />
+        </label>
+
+        <button type="submit" disabled={isSaving} style={{ justifySelf: 'start' }}>
+          {isSaving ? 'Guardando…' : 'Guardar check-in'}
+        </button>
+      </form>
+
+      {statusMessage && <p role="status">{statusMessage}</p>}
+      {errorMessage && <p role="alert">{errorMessage}</p>}
+    </section>
+  );
 }
 
 const sampleCandidates = Array.from({ length: 10 }, (_, index) => ({
@@ -1102,6 +1255,7 @@ function App() {
       </button>
       {oauthError && <p role="alert">No se pudo iniciar sesión: {oauthError}</p>}
       {isAuthenticated && <p role="status">Sesión iniciada correctamente.</p>}
+      <DailyCheckInWidget currentUser={currentUser} />
 
       {isAuthenticated && (
         <section

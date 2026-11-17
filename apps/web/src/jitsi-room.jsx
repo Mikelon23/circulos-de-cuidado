@@ -128,6 +128,15 @@ async function updateCircleMessageReactions(circleId, messageId, reactions) {
   return body.data;
 }
 
+async function fetchSessionThemes() {
+  const response = await fetch(`${apiUrl}/api/v1/session-themes`);
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body.error || 'No se pudieron cargar los temas de sesión.');
+  }
+  return Array.isArray(body.data) ? body.data : [];
+}
+
 function getSessionFeedbackStorageKey(sessionId, roomName) {
   return `session-feedback:${sessionId || roomName || 'default'}`;
 }
@@ -366,6 +375,7 @@ export default function JitsiRoom() {
   const [feedbackStatus, setFeedbackStatus] = useState('');
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [hasPromptedFeedback, setHasPromptedFeedback] = useState(false);
+  const [sessionThemes, setSessionThemes] = useState([]);
   const jitsiContainerRef = useRef(null);
   const [attendanceStatus, setAttendanceStatus] = useState('');
 
@@ -461,6 +471,26 @@ export default function JitsiRoom() {
   useEffect(() => {
     const intervalId = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSessionThemes()
+      .then((themes) => {
+        if (active) {
+          setSessionThemes(themes);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSessionThemes([]);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -639,6 +669,30 @@ export default function JitsiRoom() {
           />
         </label>
       </div>
+
+      {sessionThemes.length > 0 && (
+        <div style={{ marginTop: '0.5rem', display: 'grid', gap: '0.7rem' }}>
+          <div style={{ fontWeight: 700 }}>Temas sugeridos</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {sessionThemes.map((theme) => (
+              <button
+                key={theme.id}
+                type="button"
+                onClick={() => setSessionTheme(theme.titulo)}
+                style={{
+                  borderRadius: '999px',
+                  border: '1px solid #dfeaf4',
+                  background: '#f7fafd',
+                  padding: '0.45rem 0.8rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {theme.titulo}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <label
         style={{
