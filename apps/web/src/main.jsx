@@ -1191,7 +1191,40 @@ function App() {
                 value={dashboard.stats.interventionsCount}
                 tone="#f5ebff"
               />
+              <StatCard
+                label="Alertas de abandono"
+                value={dashboard.stats.abandonmentAlertsCount ?? 0}
+                tone="#ffe6e6"
+              />
             </div>
+            {dashboard.alerts?.abandonment?.length ? (
+              <div style={{ marginTop: '1.5rem', display: 'grid', gap: '0.9rem' }}>
+                <h3 style={{ margin: 0 }}>Alertas de abandono</h3>
+                {dashboard.alerts.abandonment.map((alert) => (
+                  <article
+                    key={alert.id}
+                    style={{
+                      background: '#fff',
+                      border: '1px solid #f7cfcf',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                    }}
+                  >
+                    <div style={{ fontWeight: 700 }}>{alert.circleName}</div>
+                    <div style={{ marginTop: '0.35rem', color: '#53657a' }}>
+                      {alert.memberId} ha faltado a {alert.consecutiveMisses} sesiones seguidas.
+                    </div>
+                    <div style={{ marginTop: '0.25rem', color: '#53657a', fontSize: '0.8rem' }}>
+                      Facilitador: {alert.facilitadorUsuarioId || 'Sin asignar'}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p style={{ marginTop: '1.25rem', color: '#72829a' }}>
+                No hay alertas de abandono pendientes.
+              </p>
+            )}
             <div style={{ display: 'grid', gap: '1rem' }}>
               {dashboard.circles.map((circle) => (
                 <article
