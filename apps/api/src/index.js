@@ -16,6 +16,7 @@ import { createCircleChangeService } from './circle-change.cjs';
 import { createCircleWorkflowService } from './circle-workflow.cjs';
 import { createSessionService } from './sessions.cjs';
 import { createAttendanceService } from './attendance.cjs';
+import { createAbandonmentAlertService } from './abandonment-alerts.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -50,10 +51,18 @@ const circleWorkflowService = createCircleWorkflowService({
   suggestionService: circleSuggestionService,
   waitingQueueService,
 });
+const abandonmentAlertService = createAbandonmentAlertService({
+  sessionService,
+  attendanceService,
+  circleService,
+  memberService: circleMemberService,
+  facilitatorService,
+});
 const adminDashboardService = createAdminDashboardService({
   circleService,
   memberService: circleMemberService,
   facilitatorService,
+  abandonmentAlertService,
 });
 
 app.use(createCorsMiddleware());
@@ -790,6 +799,14 @@ app.get('/api/v1/admin/dashboard', (_req, res) => {
   try {
     const dashboard = adminDashboardService.getDashboard();
     res.json({ data: dashboard });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/admin/alerts/abandonment', requireAuth(authService), requireAdmin, (_req, res) => {
+  try {
+    res.json({ data: abandonmentAlertService.getAbandonmentAlerts() });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

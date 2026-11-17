@@ -527,7 +527,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 47
 
 - id: 47
-- estado: pendiente
+- estado: completado
 - titulo: Implementar alerta de abandono
 - objetivo: Si un cuidador no asiste a 2 sesiones seguidas, facilitador recibe alerta
 - entregable: Sistema de alertas
