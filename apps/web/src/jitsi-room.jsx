@@ -128,6 +128,22 @@ async function updateCircleMessageReactions(circleId, messageId, reactions) {
   return body.data;
 }
 
+function getSessionFeedbackStorageKey(sessionId, roomName) {
+  return `session-feedback:${sessionId || roomName || 'default'}`;
+}
+
+function loadSessionFeedback(sessionId, roomName) {
+  try {
+    const feedbackKey = getSessionFeedbackStorageKey(sessionId, roomName);
+    const savedFeedback = localStorage.getItem(feedbackKey);
+    if (!savedFeedback) return null;
+    const parsedFeedback = JSON.parse(savedFeedback);
+    return parsedFeedback && typeof parsedFeedback === 'object' ? parsedFeedback : null;
+  } catch {
+    return null;
+  }
+}
+
 function CircleChatPanel({ circleId, displayName }) {
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
@@ -344,6 +360,12 @@ export default function JitsiRoom() {
   const [sessionTheme, setSessionTheme] = useState('cuidado y límites');
   const [timerStartedAt, setTimerStartedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [feedbackError, setFeedbackError] = useState('');
+  const [feedbackStatus, setFeedbackStatus] = useState('');
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [hasPromptedFeedback, setHasPromptedFeedback] = useState(false);
   const jitsiContainerRef = useRef(null);
   const [attendanceStatus, setAttendanceStatus] = useState('');
 
@@ -442,6 +464,27 @@ export default function JitsiRoom() {
   }, []);
 
   useEffect(() => {
+    const savedFeedback = loadSessionFeedback(sessionId, roomName);
+    if (savedFeedback) {
+      setFeedbackRating(Number(savedFeedback.rating) || 0);
+      setFeedbackComment(String(savedFeedback.comment || ''));
+      setFeedbackStatus('Gracias por compartir tu feedback de esta sesión.');
+      return;
+    }
+
+    setFeedbackRating(0);
+    setFeedbackComment('');
+    setFeedbackStatus('');
+  }, [roomName, sessionId]);
+
+  useEffect(() => {
+    if (sessionTimer.isFinished && !hasPromptedFeedback && !feedbackStatus) {
+      setHasPromptedFeedback(true);
+      setIsFeedbackModalOpen(true);
+    }
+  }, [feedbackStatus, hasPromptedFeedback, sessionTimer.isFinished]);
+
+  useEffect(() => {
     localStorage.setItem('listenerMode', String(isListenerMode));
   }, [isListenerMode]);
 
@@ -490,6 +533,31 @@ export default function JitsiRoom() {
   function resetSessionTimer() {
     setTimerStartedAt(Date.now());
     setNow(Date.now());
+    setHasPromptedFeedback(false);
+    setIsFeedbackModalOpen(false);
+  }
+
+  function handleFeedbackSubmit(event) {
+    event.preventDefault();
+
+    if (!feedbackRating) {
+      setFeedbackError('Selecciona una valoración de 1 a 5 estrellas para guardar tu feedback.');
+      return;
+    }
+
+    const payload = {
+      roomName,
+      sessionId: sessionId || roomName,
+      rating: feedbackRating,
+      comment: feedbackComment.trim(),
+      submittedAt: new Date().toISOString(),
+    };
+
+    const feedbackKey = getSessionFeedbackStorageKey(sessionId, roomName);
+    localStorage.setItem(feedbackKey, JSON.stringify(payload));
+    setFeedbackStatus('Gracias por compartir tu feedback.');
+    setFeedbackError('');
+    setIsFeedbackModalOpen(false);
   }
 
   return (
@@ -535,6 +603,11 @@ export default function JitsiRoom() {
       {attendanceStatus && (
         <p role="status" style={{ color: attendanceStatus.includes('No se pudo') ? '#a33' : '#53657a' }}>
           {attendanceStatus}
+        </p>
+      )}
+      {feedbackStatus && (
+        <p role="status" style={{ color: '#2d6b4f', fontWeight: 600 }}>
+          {feedbackStatus}
         </p>
       )}
 
@@ -670,6 +743,15 @@ export default function JitsiRoom() {
                   ? 'La sesión ha terminado.'
                   : `${formatSessionCountdown(sessionTimer.phaseRemainingSeconds)} restantes en esta fase`}
               </div>
+              {sessionTimer.isFinished && (
+                <button
+                  type="button"
+                  onClick={() => setIsFeedbackModalOpen(true)}
+                  style={{ marginTop: '0.9rem', width: '100%' }}
+                >
+                  Dar feedback de la sesión
+                </button>
+              )}
               <div
                 aria-label="Progreso de la sesión"
                 style={{
@@ -726,6 +808,117 @@ export default function JitsiRoom() {
           <CircleChatPanel circleId={roomName} displayName={displayName} />
         </div>
       </div>
+
+      {isFeedbackModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="session-feedback-title"
+          onClick={() => setIsFeedbackModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            display: 'grid',
+            placeItems: 'center',
+            padding: '1.5rem',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: 'min(100%, 560px)',
+              background: '#fff',
+              borderRadius: '22px',
+              border: '1px solid #dfeaf4',
+              boxShadow: '0 30px 60px rgba(15, 23, 42, 0.2)',
+              padding: '1.5rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '1rem',
+                marginBottom: '1rem',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Cierre de la sesión
+                </div>
+                <h2 id="session-feedback-title" style={{ margin: '0.4rem 0 0' }}>
+                  ¿Cómo te ha parecido esta sesión?
+                </h2>
+              </div>
+              <button type="button" onClick={() => setIsFeedbackModalOpen(false)} aria-label="Cerrar feedback">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleFeedbackSubmit} style={{ display: 'grid', gap: '1rem' }}>
+              <div>
+                <div style={{ marginBottom: '0.6rem', fontWeight: 600 }}>Valoración</div>
+                <div role="radiogroup" aria-label="Valoración de la sesión" style={{ display: 'flex', gap: '0.4rem' }}>
+                  {[1, 2, 3, 4, 5].map((score) => (
+                    <button
+                      key={score}
+                      type="button"
+                      aria-label={`Puntuación ${score} de 5`}
+                      onClick={() => setFeedbackRating(score)}
+                      style={{
+                        border: '1px solid #dfeaf4',
+                        borderRadius: '999px',
+                        background: score <= feedbackRating ? '#fef3c7' : '#f7fafd',
+                        color: score <= feedbackRating ? '#b45309' : '#53657a',
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        fontSize: '1.3rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label style={{ display: 'grid', gap: '0.35rem' }}>
+                Comentario opcional
+                <textarea
+                  aria-label="Comentario opcional sobre la sesión"
+                  value={feedbackComment}
+                  onChange={(event) => setFeedbackComment(event.target.value)}
+                  rows={5}
+                  placeholder="Qué te ha ayudado, qué podríamos mejorar o qué necesitas en la próxima sesión..."
+                  style={{
+                    resize: 'vertical',
+                    padding: '0.8rem',
+                    borderRadius: '10px',
+                    border: '1px solid #dfeaf4',
+                    fontFamily: 'sans-serif',
+                  }}
+                />
+              </label>
+
+              {feedbackError && (
+                <p role="alert" style={{ margin: 0, color: '#a43f3f' }}>
+                  {feedbackError}
+                </p>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.25rem' }}>
+                <button type="button" onClick={() => setIsFeedbackModalOpen(false)}>
+                  Cerrar
+                </button>
+                <button type="submit">Guardar feedback</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
