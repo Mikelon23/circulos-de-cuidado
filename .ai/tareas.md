@@ -518,7 +518,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 46
 
 - id: 46
-- estado: pendiente
+- estado: completado
 - titulo: Implementar feedback post-sesión
 - objetivo: Encuesta rápida 1-5 estrellas + comentario opcional
 - entregable: Modal post-sesión
