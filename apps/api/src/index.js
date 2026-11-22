@@ -212,7 +212,10 @@ app.post('/api/v1/check-ins', requireAuth(authService), (req, res) => {
 
 app.get('/api/v1/check-ins/me', requireAuth(authService), (req, res) => {
   try {
-    const history = checkInEmotionalService.listCheckInsByUser(req.auth.sub);
+    const history = checkInEmotionalService.listCheckInsByUser(req.auth.sub, {
+      period: req.query.period,
+      now: req.query.now,
+    });
     return res.json({ data: history });
   } catch (error) {
     return res.status(400).json({ error: error.message });

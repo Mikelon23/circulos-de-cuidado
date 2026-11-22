@@ -44,3 +44,68 @@ export function getMoodSummary(escala) {
   const mood = getMoodOption(escala);
   return `${mood.emoji} ${mood.label}`;
 }
+
+export const CHECK_IN_HISTORY_FILTERS = [
+  { value: 'week', label: 'Semana' },
+  { value: 'month', label: 'Mes' },
+  { value: 'all', label: 'Todo' },
+];
+
+function normalizeHistoryDate(checkIn) {
+  const value = checkIn.respondidoEn || checkIn.createdAt;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function normalizeCheckInHistoryPeriod(period) {
+  if (!period || period === 'all') return 'all';
+  if (period === 'week' || period === '7days' || period === 'semana') return 'week';
+  if (period === 'month' || period === '30days' || period === 'mes') return 'month';
+  throw new Error('El período debe ser semana, mes o todo.');
+}
+
+export function filterCheckInsByPeriod(checkIns = [], period = 'month', referenceDate = new Date()) {
+  const normalizedPeriod = normalizeCheckInHistoryPeriod(period);
+  const reference = new Date(referenceDate);
+  if (Number.isNaN(reference.getTime())) {
+    throw new Error('La fecha de referencia no es válida.');
+  }
+
+  const ordered = [...checkIns]
+    .filter((checkIn) => normalizeHistoryDate(checkIn))
+    .sort((a, b) => normalizeHistoryDate(a) - normalizeHistoryDate(b));
+
+  if (normalizedPeriod === 'all') return ordered;
+
+  const start = new Date(reference);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (normalizedPeriod === 'week' ? 6 : 29));
+
+  return ordered.filter((checkIn) => {
+    const date = normalizeHistoryDate(checkIn);
+    return date >= start && date <= new Date(reference.getTime());
+  });
+}
+
+export function buildCheckInHistoryChart(checkIns = [], period = 'month', referenceDate = new Date()) {
+  const filtered = filterCheckInsByPeriod(checkIns, period, referenceDate);
+  return filtered.map((checkIn) => {
+    const date = normalizeHistoryDate(checkIn);
+    return {
+      date: date.toISOString(),
+      label: date.toLocaleDateString('es', { day: '2-digit', month: 'short' }),
+      escala: Number(checkIn.escala),
+      emoji: checkIn.emoji || getMoodOption(checkIn.escala).emoji,
+      nota: typeof checkIn.nota === 'string' ? checkIn.nota : '',
+    };
+  });
+}
+
+export function calculateCheckInAverage(checkIns = []) {
+  const validScores = checkIns
+    .map((checkIn) => Number(checkIn.escala))
+    .filter((escala) => Number.isInteger(escala) && escala >= 1 && escala <= 10);
+
+  if (!validScores.length) return null;
+  return validScores.reduce((sum, escala) => sum + escala, 0) / validScores.length;
+}
