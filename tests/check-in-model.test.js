@@ -49,3 +49,39 @@ test('createCheckInEmotionalService implementa CRUD completo y historial para ch
   assert.equal(deleted.id, second.id);
   assert.equal(service.listCheckIns().length, 1);
 });
+
+test('el historial puede filtrarse por semana y por mes', () => {
+  const { createCheckInEmotionalService } = require('../apps/api/src/check-ins.cjs');
+  const service = createCheckInEmotionalService();
+
+  service.createCheckIn({
+    usuarioId: 'user-history',
+    pregunta: '¿Cómo te sientes hoy?',
+    escala: 8,
+    respondidoEn: '2026-11-20T12:00:00.000Z',
+  });
+  service.createCheckIn({
+    usuarioId: 'user-history',
+    pregunta: '¿Cómo te sientes hoy?',
+    escala: 6,
+    respondidoEn: '2026-11-01T12:00:00.000Z',
+  });
+  service.createCheckIn({
+    usuarioId: 'user-history',
+    pregunta: '¿Cómo te sientes hoy?',
+    escala: 3,
+    respondidoEn: '2026-09-01T12:00:00.000Z',
+  });
+
+  const weekly = service.listCheckInsByUser('user-history', {
+    period: 'week',
+    now: '2026-11-22T12:00:00.000Z',
+  });
+  const monthly = service.listCheckInsByUser('user-history', {
+    period: 'month',
+    now: '2026-11-22T12:00:00.000Z',
+  });
+
+  assert.equal(weekly.length, 1);
+  assert.equal(monthly.length, 2);
+});

@@ -67,13 +67,40 @@ function createCheckInEmotionalService() {
       return checkIns.map((checkIn) => sanitizeCheckIn(checkIn));
     },
 
-    listCheckInsByUser(usuarioId) {
+    listCheckInsByUser(usuarioId, options = {}) {
       if (!usuarioId) {
         throw new Error('El identificador del usuario es obligatorio');
       }
 
+      const periodInput = options.period || 'all';
+      const period = ['week', '7days', 'semana'].includes(periodInput)
+        ? 'week'
+        : ['month', '30days', 'mes'].includes(periodInput)
+          ? 'month'
+          : periodInput;
+      if (!['week', 'month', 'all'].includes(period)) {
+        throw new Error('El período debe ser semana, mes o todo');
+      }
+
+      const reference = options.now ? new Date(options.now) : new Date();
+      if (Number.isNaN(reference.getTime())) {
+        throw new Error('La fecha de referencia no es válida');
+      }
+
+      let start = null;
+      if (period !== 'all') {
+        start = new Date(reference);
+        start.setHours(0, 0, 0, 0);
+        start.setDate(start.getDate() - (period === 'week' ? 6 : 29));
+      }
+
       const userCheckIns = checkIns
         .filter((checkIn) => checkIn.usuarioId === String(usuarioId).trim())
+        .filter((checkIn) => {
+          if (!start) return true;
+          const respondedAt = new Date(checkIn.respondidoEn);
+          return !Number.isNaN(respondedAt.getTime()) && respondedAt >= start && respondedAt <= reference;
+        })
         .sort((a, b) => new Date(b.respondidoEn) - new Date(a.respondidoEn));
 
       return userCheckIns.map((checkIn) => sanitizeCheckIn(checkIn));

@@ -4,6 +4,9 @@ import JitsiRoom from './jitsi-room.jsx';
 import BreathingRitual from './breathing-ritual.jsx';
 import { buildJitsiRoomName } from './jitsi-room-utils.js';
 import {
+  buildCheckInHistoryChart,
+  calculateCheckInAverage,
+  CHECK_IN_HISTORY_FILTERS,
   DAILY_CHECK_IN_QUESTION,
   getMoodOption,
   normalizeDailyCheckInInput,
@@ -70,6 +73,22 @@ async function fetchCircleInvitations(accessToken) {
   return authenticatedRequest('/api/v1/circle-invitations', accessToken);
 }
 
+async function fetchCheckInHistory(accessToken, period = 'month') {
+  return authenticatedRequest(`/api/v1/check-ins/me?period=${encodeURIComponent(period)}`, accessToken);
+}
+
+function appendLocalCheckIn(checkIn) {
+  const savedHistory = JSON.parse(localStorage.getItem('dailyCheckIns') || '[]');
+  const history = Array.isArray(savedHistory) ? savedHistory : [];
+  const nextHistory = [
+    ...history.filter((item) => item.id !== checkIn.id),
+    checkIn,
+  ].slice(-100);
+  localStorage.setItem('dailyCheckIns', JSON.stringify(nextHistory));
+  localStorage.setItem('dailyCheckIn', JSON.stringify(checkIn));
+  return nextHistory;
+}
+
 function DailyCheckInWidget({ currentUser }) {
   const [moodScore, setMoodScore] = useState(7);
   const [note, setNote] = useState('');
@@ -83,8 +102,11 @@ function DailyCheckInWidget({ currentUser }) {
     }
 
     try {
-      const saved = JSON.parse(localStorage.getItem('dailyCheckIn') || 'null');
-      if (saved && Number.isInteger(saved.escala)) {
+      const savedHistory = JSON.parse(localStorage.getItem('dailyCheckIns') || '[]');
+      const saved = Array.isArray(savedHistory) && savedHistory.length
+        ? savedHistory[savedHistory.length - 1]
+        : JSON.parse(localStorage.getItem('dailyCheckIn') || 'null');
+      if (saved && Number.isInteger(Number(saved.escala))) {
         setMoodScore(Number(saved.escala));
         setNote(saved.nota || '');
       }
@@ -118,14 +140,14 @@ function DailyCheckInWidget({ currentUser }) {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-        localStorage.setItem('dailyCheckIn', JSON.stringify(created));
+        appendLocalCheckIn(created);
         setStatusMessage(`Gracias por cuidar tu bienestar. Registro guardado con ${created.escala}/10.`);
       } else {
         const stored = {
           ...payload,
           createdAt: new Date().toISOString(),
         };
-        localStorage.setItem('dailyCheckIn', JSON.stringify(stored));
+        appendLocalCheckIn(stored);
         setStatusMessage('Tu check-in se guardó localmente. Inicia sesión para sincronizarlo.');
       }
     } catch (error) {
@@ -139,7 +161,7 @@ function DailyCheckInWidget({ currentUser }) {
         createdAt: new Date().toISOString(),
       };
 
-      localStorage.setItem('dailyCheckIn', JSON.stringify(fallback));
+      appendLocalCheckIn(fallback);
       setStatusMessage('No se pudo sincronizar con la API; el registro quedó guardado localmente.');
     } finally {
       setIsSaving(false);
@@ -214,6 +236,157 @@ function DailyCheckInWidget({ currentUser }) {
 
       {statusMessage && <p role="status">{statusMessage}</p>}
       {errorMessage && <p role="alert">{errorMessage}</p>}
+    </section>
+  );
+}
+
+function CheckInHistoryView({ currentUser, isAuthenticated }) {
+  const [period, setPeriod] = useState('month');
+  const [history, setHistory] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    let localHistory = [];
+    try {
+      const saved = JSON.parse(localStorage.getItem('dailyCheckIns') || '[]');
+      localHistory = Array.isArray(saved) ? saved : [];
+    } catch {
+      localHistory = [];
+    }
+
+    if (!isAuthenticated) {
+      setHistory(localHistory);
+      setErrorMessage('');
+      return () => {
+        active = false;
+      };
+    }
+
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      setHistory(localHistory);
+      return () => {
+        active = false;
+      };
+    }
+
+    fetchCheckInHistory(accessToken, period)
+      .then((apiHistory) => {
+        if (!active) return;
+        const combined = new Map();
+        [...localHistory, ...(Array.isArray(apiHistory) ? apiHistory : [])].forEach((checkIn) => {
+          const key = checkIn.id || `${checkIn.respondidoEn || checkIn.createdAt}-${checkIn.escala}`;
+          combined.set(key, checkIn);
+        });
+        setHistory([...combined.values()]);
+        setErrorMessage('');
+      })
+      .catch((error) => {
+        if (!active) return;
+        setHistory(localHistory);
+        setErrorMessage(error.message);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser, isAuthenticated, period]);
+
+  const chartPoints = buildCheckInHistoryChart(history, period);
+  const average = calculateCheckInAverage(chartPoints);
+  const width = 640;
+  const height = 220;
+  const left = 24;
+  const right = 616;
+  const top = 20;
+  const bottom = 190;
+  const plotWidth = right - left;
+  const plotHeight = bottom - top;
+  const positions = chartPoints.map((point, index) => {
+    const x = chartPoints.length === 1 ? (left + right) / 2 : left + (index * plotWidth) / (chartPoints.length - 1);
+    const y = bottom - ((point.escala - 1) / 9) * plotHeight;
+    return { ...point, x, y };
+  });
+  const linePoints = positions.map((point) => `${point.x},${point.y}`).join(' ');
+
+  return (
+    <section
+      aria-labelledby="check-in-history-title"
+      style={{
+        margin: '2rem 0',
+        padding: '1.5rem',
+        background: '#f7fafd',
+        borderRadius: '16px',
+        border: '1px solid #dfeaf4',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+        <div>
+          <h2 id="check-in-history-title">Historial de check-ins</h2>
+          <p style={{ marginTop: 0, color: '#53657a' }}>
+            Evolución emocional de tu bienestar
+          </p>
+        </div>
+        <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 600 }}>
+          Período
+          <select value={period} onChange={(event) => setPeriod(event.target.value)}>
+            {CHECK_IN_HISTORY_FILTERS.map((filter) => (
+              <option key={filter.value} value={filter.value}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {errorMessage && <p role="alert">No se pudo actualizar desde la API: {errorMessage}</p>}
+
+      {!chartPoints.length ? (
+        <p>Guarda tu primer check-in para comenzar a ver tu progreso.</p>
+      ) : (
+        <>
+          <p style={{ fontWeight: 600 }}>
+            Promedio: {average.toFixed(1)} / 10
+          </p>
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            role="img"
+            aria-label="Gráfico de línea con la evolución emocional"
+            style={{ width: '100%', maxHeight: '260px', background: '#fff', borderRadius: '12px' }}
+          >
+            {[1, 4, 7, 10].map((score) => {
+              const y = bottom - ((score - 1) / 9) * plotHeight;
+              return (
+                <g key={score}>
+                  <line x1={left} x2={right} y1={y} y2={y} stroke="#e6edf4" />
+                  <text x="2" y={y + 4} fontSize="12" fill="#53657a">{score}</text>
+                </g>
+              );
+            })}
+            {linePoints && <polyline points={linePoints} fill="none" stroke="#4d9a8b" strokeWidth="3" />}
+            {positions.map((point) => (
+              <g key={`${point.date}-${point.escala}`}>
+                <circle cx={point.x} cy={point.y} r="5" fill="#4d9a8b">
+                  <title>{`${point.label}: ${point.escala}/10 ${point.emoji}`}</title>
+                </circle>
+                <text x={point.x} y={bottom + 18} textAnchor="middle" fontSize="11" fill="#53657a">
+                  {point.label}
+                </text>
+              </g>
+            ))}
+          </svg>
+          <div style={{ display: 'grid', gap: '0.5rem', marginTop: '1rem' }}>
+            {[...chartPoints].reverse().map((point) => (
+              <div key={`${point.date}-${point.escala}`} style={{ display: 'flex', gap: '0.75rem', alignItems: 'baseline' }}>
+                <strong>{point.emoji} {point.escala}/10</strong>
+                <span>{point.label}</span>
+                {point.nota && <span style={{ color: '#53657a' }}>{point.nota}</span>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }
@@ -1256,6 +1429,10 @@ function App() {
       {oauthError && <p role="alert">No se pudo iniciar sesión: {oauthError}</p>}
       {isAuthenticated && <p role="status">Sesión iniciada correctamente.</p>}
       <DailyCheckInWidget currentUser={currentUser} />
+      <CheckInHistoryView
+        currentUser={currentUser}
+        isAuthenticated={isAuthenticated}
+      />
 
       {isAuthenticated && (
         <section

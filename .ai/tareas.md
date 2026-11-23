@@ -73,7 +73,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  47 | Implementar alerta de abandono                  | Sistema de alertas             | completado |
 |  48 | Crear biblioteca de temas de sesión             | CMS básico                     | completado |
 |  49 | Implementar check-in diario                     | Widget diario                  | completado |
-|  50 | Implementar historial de check-ins              | Vista de progreso              | pendiente  |
+|  50 | Implementar historial de check-ins              | Vista de progreso              | completado |
 |  51 | Implementar detección de patrones de riesgo     | Algoritmo + notificación       | pendiente  |
 |  52 | Implementar "momento de gratitud"               | Micro-interacción              | pendiente  |
 |  53 | Crear dashboard de bienestar del cuidador       | Vista personal                 | pendiente  |
@@ -556,7 +556,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 50
 
 - id: 50
-- estado: pendiente
+- estado: completado
 - titulo: Implementar historial de check-ins
 - objetivo: Gráfico de línea con evolución emocional, filtros por semana/mes
 - entregable: Vista de progreso
