@@ -20,6 +20,7 @@ import { createAbandonmentAlertService } from './abandonment-alerts.cjs';
 import { createSessionThemeService } from './session-themes.cjs';
 import { createCheckInEmotionalService } from './check-ins.cjs';
 import { createRiskAlertService } from './risk-alerts.cjs';
+import { createGratitudeService } from './gratitudes.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -46,6 +47,7 @@ const attendanceService = createAttendanceService({
 const messageService = createMessageService();
 const sessionThemeService = createSessionThemeService();
 const checkInEmotionalService = createCheckInEmotionalService();
+const gratitudeService = createGratitudeService();
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
 const circleChangeService = createCircleChangeService();
@@ -226,6 +228,27 @@ app.get('/api/v1/check-ins/me', requireAuth(authService), (req, res) => {
       now: req.query.now,
     });
     return res.json({ data: history });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/gratitudes', requireAuth(authService), (req, res) => {
+  try {
+    const created = gratitudeService.createGratitude({
+      usuarioId: req.auth.sub,
+      respuesta: req.body?.respuesta,
+      fecha: req.body?.fecha,
+    });
+    return res.status(201).json({ data: created });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/gratitudes/me', requireAuth(authService), (req, res) => {
+  try {
+    return res.json({ data: gratitudeService.listGratitudesByUser(req.auth.sub) });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
