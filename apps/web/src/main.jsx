@@ -95,6 +95,7 @@ function DailyCheckInWidget({ currentUser }) {
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [riskAlert, setRiskAlert] = useState(null);
 
   useEffect(() => {
     if (!window.localStorage) {
@@ -142,6 +143,7 @@ function DailyCheckInWidget({ currentUser }) {
         });
         appendLocalCheckIn(created);
         setStatusMessage(`Gracias por cuidar tu bienestar. Registro guardado con ${created.escala}/10.`);
+        setRiskAlert(created.riskAlert || null);
       } else {
         const stored = {
           ...payload,
@@ -235,6 +237,26 @@ function DailyCheckInWidget({ currentUser }) {
       </form>
 
       {statusMessage && <p role="status">{statusMessage}</p>}
+      {riskAlert && (
+        <aside
+          role="alert"
+          style={{
+            marginTop: '1rem',
+            padding: '1rem',
+            borderRadius: '12px',
+            background: '#fff1f1',
+            border: '1px solid #efb9b9',
+          }}
+        >
+          <strong>Nota de bienestar</strong>
+          <p style={{ marginBottom: '0.5rem' }}>{riskAlert.mensaje}</p>
+          <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+            {riskAlert.sugerencias.map((suggestion) => (
+              <li key={suggestion}>{suggestion}</li>
+            ))}
+          </ul>
+        </aside>
+      )}
       {errorMessage && <p role="alert">{errorMessage}</p>}
     </section>
   );
@@ -1527,6 +1549,11 @@ function App() {
                 value={dashboard.stats.abandonmentAlertsCount ?? 0}
                 tone="#ffe6e6"
               />
+              <StatCard
+                label="Alertas de riesgo"
+                value={dashboard.stats.riskAlertsCount ?? 0}
+                tone="#fff0de"
+              />
             </div>
             {dashboard.alerts?.abandonment?.length ? (
               <div style={{ marginTop: '1.5rem', display: 'grid', gap: '0.9rem' }}>
@@ -1554,6 +1581,34 @@ function App() {
             ) : (
               <p style={{ marginTop: '1.25rem', color: '#72829a' }}>
                 No hay alertas de abandono pendientes.
+              </p>
+            )}
+            {dashboard.alerts?.risk?.length ? (
+              <div style={{ marginTop: '1.5rem', display: 'grid', gap: '0.9rem' }}>
+                <h3 style={{ margin: 0 }}>Alertas de riesgo emocional</h3>
+                {dashboard.alerts.risk.map((alert) => (
+                  <article
+                    key={alert.id}
+                    style={{
+                      background: '#fff',
+                      border: '1px solid #efb9b9',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                    }}
+                  >
+                    <div style={{ fontWeight: 700 }}>{alert.circleName}</div>
+                    <div style={{ marginTop: '0.35rem', color: '#53657a' }}>
+                      {alert.memberId} registró tres check-ins seguidos por debajo de 4.
+                    </div>
+                    <div style={{ marginTop: '0.25rem', color: '#53657a', fontSize: '0.8rem' }}>
+                      Facilitador: {alert.facilitadorUsuarioId || 'Sin asignar'}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p style={{ marginTop: '1.25rem', color: '#72829a' }}>
+                No hay alertas de riesgo emocional pendientes.
               </p>
             )}
             <div style={{ display: 'grid', gap: '1rem' }}>

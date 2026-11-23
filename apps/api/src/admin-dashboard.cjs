@@ -3,6 +3,7 @@ function createAdminDashboardService({
   memberService,
   facilitatorService,
   abandonmentAlertService,
+  riskAlertService,
 } = {}) {
   if (!circleService || typeof circleService.listCircles !== 'function') {
     throw new Error('Se requiere un servicio de círculos válido');
@@ -21,6 +22,7 @@ function createAdminDashboardService({
     const members = memberService.listMembers();
     const facilitators = facilitatorService.listFacilitators();
     const abandonmentAlerts = abandonmentAlertService?.getAbandonmentAlerts?.() || [];
+    const riskAlerts = riskAlertService?.getRiskAlerts?.() || [];
 
     const activeCircles = circles.filter((circle) => circle.estado === 'activo');
     const activeFacilitators = facilitators.filter((facilitator) => facilitator.activo !== false);
@@ -60,9 +62,11 @@ function createAdminDashboardService({
         facilitatorsCount: activeFacilitators.length,
         interventionsCount: members.length,
         abandonmentAlertsCount: abandonmentAlerts.length,
+        riskAlertsCount: riskAlerts.length,
       },
       alerts: {
         abandonment: abandonmentAlerts,
+        risk: riskAlerts,
       },
       circles: circlesSummary,
     };

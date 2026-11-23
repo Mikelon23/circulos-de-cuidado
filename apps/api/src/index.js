@@ -19,6 +19,7 @@ import { createAttendanceService } from './attendance.cjs';
 import { createAbandonmentAlertService } from './abandonment-alerts.cjs';
 import { createSessionThemeService } from './session-themes.cjs';
 import { createCheckInEmotionalService } from './check-ins.cjs';
+import { createRiskAlertService } from './risk-alerts.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -62,11 +63,18 @@ const abandonmentAlertService = createAbandonmentAlertService({
   memberService: circleMemberService,
   facilitatorService,
 });
+const riskAlertService = createRiskAlertService({
+  checkInService: checkInEmotionalService,
+  circleService,
+  memberService: circleMemberService,
+  facilitatorService,
+});
 const adminDashboardService = createAdminDashboardService({
   circleService,
   memberService: circleMemberService,
   facilitatorService,
   abandonmentAlertService,
+  riskAlertService,
 });
 
 app.use(createCorsMiddleware());
@@ -204,7 +212,8 @@ app.post('/api/v1/check-ins', requireAuth(authService), (req, res) => {
       respondidoEn: req.body?.respondidoEn,
     });
 
-    return res.status(201).json({ data: created });
+    const riskAlert = riskAlertService.evaluateCheckIn(created);
+    return res.status(201).json({ data: { ...created, riskAlert } });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
@@ -875,6 +884,14 @@ app.delete('/api/v1/session-themes/:id', requireAuth(authService), requireAdmin,
 app.get('/api/v1/admin/alerts/abandonment', requireAuth(authService), requireAdmin, (_req, res) => {
   try {
     res.json({ data: abandonmentAlertService.getAbandonmentAlerts() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/admin/alerts/risk', requireAuth(authService), requireAdmin, (_req, res) => {
+  try {
+    res.json({ data: riskAlertService.getRiskAlerts() });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
