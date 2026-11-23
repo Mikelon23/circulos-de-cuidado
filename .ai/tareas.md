@@ -565,7 +565,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 51
 
 - id: 51
-- estado: pendiente
+- estado: completado
 - titulo: Implementar detección de patrones de riesgo
 - objetivo: Si 3 check-ins consecutivos < 4, alerta al facilitador + sugerencias
 - entregable: Algoritmo + notificación
