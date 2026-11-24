@@ -79,6 +79,13 @@ async function fetchCheckInHistory(accessToken, period = 'month') {
   return authenticatedRequest(`/api/v1/check-ins/me?period=${encodeURIComponent(period)}`, accessToken);
 }
 
+async function fetchWellbeingDashboard(accessToken, period = 'month') {
+  return authenticatedRequest(
+    `/api/v1/wellbeing/dashboard?period=${encodeURIComponent(period)}`,
+    accessToken
+  );
+}
+
 function appendLocalCheckIn(checkIn) {
   const savedHistory = JSON.parse(localStorage.getItem('dailyCheckIns') || '[]');
   const history = Array.isArray(savedHistory) ? savedHistory : [];
@@ -319,6 +326,126 @@ function DailyCheckInWidget({ currentUser }) {
         </aside>
       )}
       {errorMessage && <p role="alert">{errorMessage}</p>}
+    </section>
+  );
+}
+
+function WellbeingDashboardView({ currentUser, isAuthenticated }) {
+  const [period, setPeriod] = useState('month');
+  const [dashboard, setDashboard] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) {
+      setDashboard(null);
+      setErrorMessage('');
+      return;
+    }
+
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      setDashboard(null);
+      return;
+    }
+
+    let active = true;
+    fetchWellbeingDashboard(accessToken, period)
+      .then((data) => {
+        if (active) {
+          setDashboard(data);
+          setErrorMessage('');
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setDashboard(null);
+          setErrorMessage(error.message);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser, isAuthenticated, period]);
+
+  const directionLabels = {
+    up: 'En aumento',
+    down: 'En descenso',
+    stable: 'Estable',
+  };
+
+  return (
+    <section
+      aria-labelledby="wellbeing-dashboard-title"
+      style={{
+        margin: '2rem 0',
+        padding: '1.5rem',
+        background: '#f8f4ff',
+        borderRadius: '16px',
+        border: '1px solid #e2d8f7',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+        <div>
+          <h2 id="wellbeing-dashboard-title">Mi bienestar</h2>
+          <p style={{ marginTop: 0, color: '#53657a' }}>
+            Tu resumen personal como cuidador
+          </p>
+        </div>
+        {isAuthenticated && (
+          <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 600 }}>
+            Período
+            <select value={period} onChange={(event) => setPeriod(event.target.value)}>
+              {CHECK_IN_HISTORY_FILTERS.map((filter) => (
+                <option key={filter.value} value={filter.value}>
+                  {filter.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
+
+      {!isAuthenticated ? (
+        <p>Inicia sesión para ver tu tendencia emocional, asistencia y conexiones.</p>
+      ) : errorMessage ? (
+        <p role="alert">{errorMessage}</p>
+      ) : !dashboard ? (
+        <p>Cargando tu resumen personal…</p>
+      ) : (
+        <>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+            <StatCard
+              label="Tendencia emocional"
+              value={
+                dashboard.emotionalTrend.average === null
+                  ? 'Sin datos'
+                  : `${directionLabels[dashboard.emotionalTrend.direction]} · ${dashboard.emotionalTrend.average}/10`
+              }
+              tone="#edf9f0"
+            />
+            <StatCard
+              label="Sesiones asistidas"
+              value={dashboard.attendedSessions.total}
+              tone="#e7f2ff"
+            />
+            <StatCard
+              label="Conexiones formadas"
+              value={dashboard.connections.total}
+              tone="#fff5de"
+            />
+          </div>
+          {dashboard.attendedSessions.latest ? (
+            <p style={{ color: '#53657a' }}>
+              Última sesión asistida: <strong>{dashboard.attendedSessions.latest.titulo}</strong>
+            </p>
+          ) : (
+            <p style={{ color: '#53657a' }}>
+              Aún no tienes sesiones registradas como asistidas.
+            </p>
+          )}
+        </>
+      )}
     </section>
   );
 }
@@ -1512,6 +1639,10 @@ function App() {
       {oauthError && <p role="alert">No se pudo iniciar sesión: {oauthError}</p>}
       {isAuthenticated && <p role="status">Sesión iniciada correctamente.</p>}
       <DailyCheckInWidget currentUser={currentUser} />
+      <WellbeingDashboardView
+        currentUser={currentUser}
+        isAuthenticated={isAuthenticated}
+      />
       <CheckInHistoryView
         currentUser={currentUser}
         isAuthenticated={isAuthenticated}

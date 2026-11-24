@@ -76,7 +76,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  50 | Implementar historial de check-ins              | Vista de progreso              | completado |
 |  51 | Implementar detección de patrones de riesgo     | Algoritmo + notificación       | completado  |
 |  52 | Implementar "momento de gratitud"               | Micro-interacción              | completado  |
-|  53 | Crear dashboard de bienestar del cuidador       | Vista personal                 | pendiente  |
+|  53 | Crear dashboard de bienestar del cuidador       | Vista personal                 | completado |
 |  54 | Implementar "señales de alarma" educativas      | Artículos interactivos         | pendiente  |
 |  55 | Implementar derivación a recursos profesionales | Directorio + contacto          | pendiente  |
 |  56 | Crear sistema de logros/badges                  | Gamificación ligera            | pendiente  |
@@ -583,7 +583,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 53
 
 - id: 53
-- estado: pendiente
+- estado: completado
 - titulo: Crear dashboard de bienestar del cuidador
 - objetivo: Resumen visual: tendencia emocional, sesiones asistidas, conexiones formadas
 - entregable: Vista personal
