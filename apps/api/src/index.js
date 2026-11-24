@@ -21,6 +21,7 @@ import { createSessionThemeService } from './session-themes.cjs';
 import { createCheckInEmotionalService } from './check-ins.cjs';
 import { createRiskAlertService } from './risk-alerts.cjs';
 import { createGratitudeService } from './gratitudes.cjs';
+import { createWellbeingDashboardService } from './wellbeing-dashboard.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -48,6 +49,12 @@ const messageService = createMessageService();
 const sessionThemeService = createSessionThemeService();
 const checkInEmotionalService = createCheckInEmotionalService();
 const gratitudeService = createGratitudeService();
+const wellbeingDashboardService = createWellbeingDashboardService({
+  checkInService: checkInEmotionalService,
+  sessionService,
+  attendanceService,
+  memberService: circleMemberService,
+});
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
 const circleChangeService = createCircleChangeService();
@@ -228,6 +235,18 @@ app.get('/api/v1/check-ins/me', requireAuth(authService), (req, res) => {
       now: req.query.now,
     });
     return res.json({ data: history });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/wellbeing/dashboard', requireAuth(authService), (req, res) => {
+  try {
+    const dashboard = wellbeingDashboardService.getDashboard(req.auth.sub, {
+      period: req.query.period,
+      now: req.query.now,
+    });
+    return res.json({ data: dashboard });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
