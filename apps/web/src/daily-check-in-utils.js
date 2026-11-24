@@ -1,4 +1,14 @@
 export const DAILY_CHECK_IN_QUESTION = '¿Cómo te sientes hoy?';
+export const GRATITUDE_PROMPT = '¿Qué te hizo sonreír hoy?';
+
+export function normalizeGratitudeInput(respuesta) {
+  const normalized = typeof respuesta === 'string' ? respuesta.trim() : '';
+  if (!normalized) return null;
+  if (normalized.length > 500) {
+    throw new Error('La respuesta debe tener 500 caracteres o menos.');
+  }
+  return normalized;
+}
 
 export const DAILY_MOOD_OPTIONS = [
   { escala: 1, emoji: '😵', label: 'Muy agotado' },

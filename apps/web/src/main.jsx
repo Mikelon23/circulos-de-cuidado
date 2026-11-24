@@ -8,8 +8,10 @@ import {
   calculateCheckInAverage,
   CHECK_IN_HISTORY_FILTERS,
   DAILY_CHECK_IN_QUESTION,
+  GRATITUDE_PROMPT,
   getMoodOption,
   normalizeDailyCheckInInput,
+  normalizeGratitudeInput,
 } from './daily-check-in-utils.js';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -92,6 +94,8 @@ function appendLocalCheckIn(checkIn) {
 function DailyCheckInWidget({ currentUser }) {
   const [moodScore, setMoodScore] = useState(7);
   const [note, setNote] = useState('');
+  const [gratitude, setGratitude] = useState('');
+  const [gratitudeSaved, setGratitudeSaved] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -103,6 +107,7 @@ function DailyCheckInWidget({ currentUser }) {
     }
 
     try {
+      setGratitude(localStorage.getItem('dailyGratitude') || '');
       const savedHistory = JSON.parse(localStorage.getItem('dailyCheckIns') || '[]');
       const saved = Array.isArray(savedHistory) && savedHistory.length
         ? savedHistory[savedHistory.length - 1]
@@ -120,10 +125,12 @@ function DailyCheckInWidget({ currentUser }) {
     event.preventDefault();
     setStatusMessage('');
     setErrorMessage('');
+    setGratitudeSaved(false);
     setIsSaving(true);
 
     try {
       const mood = getMoodOption(moodScore);
+      const gratitudeResponse = normalizeGratitudeInput(gratitude);
       const normalizedInput = normalizeDailyCheckInInput({
         escala: moodScore,
         nota: note,
@@ -144,12 +151,33 @@ function DailyCheckInWidget({ currentUser }) {
         appendLocalCheckIn(created);
         setStatusMessage(`Gracias por cuidar tu bienestar. Registro guardado con ${created.escala}/10.`);
         setRiskAlert(created.riskAlert || null);
+
+        if (gratitudeResponse) {
+          try {
+            await authenticatedRequest('/api/v1/gratitudes', accessToken, {
+              method: 'POST',
+              body: JSON.stringify({ respuesta: gratitudeResponse }),
+            });
+            localStorage.setItem('dailyGratitude', gratitudeResponse);
+            setGratitudeSaved(true);
+          } catch {
+            setErrorMessage('El check-in se guardó, pero no se pudo guardar el momento de gratitud.');
+          }
+        } else {
+          localStorage.removeItem('dailyGratitude');
+        }
       } else {
         const stored = {
           ...payload,
           createdAt: new Date().toISOString(),
         };
         appendLocalCheckIn(stored);
+        if (gratitudeResponse) {
+          localStorage.setItem('dailyGratitude', gratitudeResponse);
+          setGratitudeSaved(true);
+        } else {
+          localStorage.removeItem('dailyGratitude');
+        }
         setStatusMessage('Tu check-in se guardó localmente. Inicia sesión para sincronizarlo.');
       }
     } catch (error) {
@@ -231,12 +259,45 @@ function DailyCheckInWidget({ currentUser }) {
           />
         </label>
 
+        <label
+          style={{
+            display: 'grid',
+            gap: '0.5rem',
+            fontWeight: 600,
+            padding: '0.9rem',
+            borderRadius: '12px',
+            background: '#fff',
+            border: '1px dashed #e6c98a',
+          }}
+        >
+          {GRATITUDE_PROMPT} <span style={{ fontWeight: 400, color: '#72829a' }}>Opcional</span>
+          <textarea
+            aria-label="Momento de gratitud opcional"
+            value={gratitude}
+            onChange={(event) => setGratitude(event.target.value)}
+            maxLength={500}
+            rows={2}
+            placeholder="Un abrazo, una charla amable, una taza de té..."
+            style={{
+              padding: '0.75rem',
+              border: '1px solid #dfeaf4',
+              borderRadius: '10px',
+              fontFamily: 'sans-serif',
+            }}
+          />
+        </label>
+
         <button type="submit" disabled={isSaving} style={{ justifySelf: 'start' }}>
           {isSaving ? 'Guardando…' : 'Guardar check-in'}
         </button>
       </form>
 
       {statusMessage && <p role="status">{statusMessage}</p>}
+      {gratitudeSaved && (
+        <p role="status" style={{ color: '#4d7c64', fontWeight: 600 }}>
+          Guardamos ese pequeño momento para recordarlo con cariño.
+        </p>
+      )}
       {riskAlert && (
         <aside
           role="alert"

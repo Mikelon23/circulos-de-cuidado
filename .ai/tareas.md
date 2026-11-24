@@ -74,8 +74,8 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  48 | Crear biblioteca de temas de sesión             | CMS básico                     | completado |
 |  49 | Implementar check-in diario                     | Widget diario                  | completado |
 |  50 | Implementar historial de check-ins              | Vista de progreso              | completado |
-|  51 | Implementar detección de patrones de riesgo     | Algoritmo + notificación       | pendiente  |
-|  52 | Implementar "momento de gratitud"               | Micro-interacción              | pendiente  |
+|  51 | Implementar detección de patrones de riesgo     | Algoritmo + notificación       | completado  |
+|  52 | Implementar "momento de gratitud"               | Micro-interacción              | completado  |
 |  53 | Crear dashboard de bienestar del cuidador       | Vista personal                 | pendiente  |
 |  54 | Implementar "señales de alarma" educativas      | Artículos interactivos         | pendiente  |
 |  55 | Implementar derivación a recursos profesionales | Directorio + contacto          | pendiente  |
@@ -574,7 +574,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 52
 
 - id: 52
-- estado: pendiente
+- estado: completado
 - titulo: Implementar "momento de gratitud"
 - objetivo: Prompt diario opcional: "¿Qué te hizo sonreír hoy?"
 - entregable: Micro-interacción
