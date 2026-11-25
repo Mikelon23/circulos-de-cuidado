@@ -18,6 +18,11 @@ import {
   BURNOUT_SIGNALS,
   evaluateBurnoutRecognition,
 } from './burnout-signals-utils.js';
+import {
+  PROFESSIONAL_RESOURCE_REGIONS,
+  normalizeProfessionalResourceFilters,
+  filterProfessionalResources,
+} from './professional-resources-utils.js';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -571,6 +576,130 @@ function BurnoutSignalsView() {
           Reconocer estas señales es un primer paso. Prioriza descanso, apoyo y límites realistas.
         </p>
       )}
+    </section>
+  );
+}
+
+function ProfessionalResourcesView() {
+  const [region, setRegion] = useState('Todas');
+  const [modality, setModality] = useState('todas');
+  const [cost, setCost] = useState('');
+  const [resources, setResources] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${apiUrl}/api/v1/professional-resources`)
+      .then((response) => response.json())
+      .then((body) => {
+        if (active && Array.isArray(body.data?.resources)) {
+          setResources(body.data.resources);
+          setErrorMessage('');
+        }
+      })
+      .catch((error) => {
+        if (active) setErrorMessage(error.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const normalizedFilters = normalizeProfessionalResourceFilters({
+    region,
+    modality,
+    cost,
+  });
+  const filteredResources = filterProfessionalResources(resources, normalizedFilters);
+
+  return (
+    <section
+      aria-labelledby="professional-resources-title"
+      style={{
+        margin: '2rem 0',
+        padding: '1.5rem',
+        background: '#f2fbf7',
+        borderRadius: '16px',
+        border: '1px solid #bfe3d1',
+      }}
+    >
+      <h2 id="professional-resources-title">Derivación a recursos profesionales</h2>
+      <p style={{ marginTop: 0, color: '#53657a' }}>
+        Opciones gratuitas o de bajo costo. Confirma siempre disponibilidad y condiciones.
+      </p>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          marginBottom: '1rem',
+        }}
+      >
+        <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 600 }}>
+          Región
+          <select value={region} onChange={(event) => setRegion(event.target.value)}>
+            {PROFESSIONAL_RESOURCE_REGIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 600 }}>
+          Modalidad
+          <select value={modality} onChange={(event) => setModality(event.target.value)}>
+            <option value="todas">Todas</option>
+            <option value="presencial">Presencial</option>
+            <option value="telefono">Teléfono</option>
+            <option value="telefonica">Atención telefónica</option>
+          </select>
+        </label>
+        <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 600 }}>
+          Costo
+          <select value={cost} onChange={(event) => setCost(event.target.value)}>
+            <option value="">Todos</option>
+            <option value="gratuito">Gratuito</option>
+            <option value="bajo costo">Bajo costo</option>
+          </select>
+        </label>
+      </div>
+
+      {errorMessage && <p role="alert">{errorMessage}</p>}
+
+      {!filteredResources.length ? (
+        <p>No encontramos recursos con estos filtros. Prueba otra región o modalidad.</p>
+      ) : (
+        <div style={{ display: 'grid', gap: '0.75rem' }}>
+          {filteredResources.map((resource) => (
+            <article
+              key={resource.id}
+              style={{
+                padding: '1rem',
+                background: '#fff',
+                borderRadius: '12px',
+                border: '1px solid #d5e9df',
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>{resource.nombre}</h3>
+              <p style={{ margin: '0.25rem 0', color: '#53657a' }}>{resource.descripcion}</p>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+                <strong>{resource.coste}</strong>
+                <span>{resource.region}</span>
+                <span>{resource.tipo}</span>
+              </div>
+              <p style={{ marginBottom: 0 }}>
+                <strong>Contacto:</strong> {resource.contacto}
+              </p>
+              <p style={{ marginBottom: 0, color: '#53657a' }}>{resource.disponibilidad}</p>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <p style={{ marginBottom: 0, marginTop: '1rem', color: '#77512f' }}>
+        Si existe peligro inmediato para tu seguridad o la de otra persona, contacta a emergencias.
+      </p>
     </section>
   );
 }
@@ -1765,6 +1894,7 @@ function App() {
       {isAuthenticated && <p role="status">Sesión iniciada correctamente.</p>}
       <DailyCheckInWidget currentUser={currentUser} />
       <BurnoutSignalsView />
+      <ProfessionalResourcesView />
       <WellbeingDashboardView
         currentUser={currentUser}
         isAuthenticated={isAuthenticated}
