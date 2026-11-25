@@ -13,6 +13,11 @@ import {
   normalizeDailyCheckInInput,
   normalizeGratitudeInput,
 } from './daily-check-in-utils.js';
+import {
+  BURNOUT_SIGNAL_QUESTION,
+  BURNOUT_SIGNALS,
+  evaluateBurnoutRecognition,
+} from './burnout-signals-utils.js';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -445,6 +450,126 @@ function WellbeingDashboardView({ currentUser, isAuthenticated }) {
             </p>
           )}
         </>
+      )}
+    </section>
+  );
+}
+
+function BurnoutSignalsView() {
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [expandedIds, setExpandedIds] = useState([]);
+  const [signals, setSignals] = useState(BURNOUT_SIGNALS);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${apiUrl}/api/v1/burnout-signals`)
+      .then((response) => response.json())
+      .then((body) => {
+        if (active && Array.isArray(body.data)) {
+          setSignals(body.data.map((signal) => ({
+            id: signal.id,
+            title: signal.titulo,
+            description: signal.descripcion,
+            question: signal.reconocible,
+            action: signal.accion,
+          })));
+        }
+      })
+      .catch(() => {
+        if (active) setSignals(BURNOUT_SIGNALS);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function toggleSignal(signalId) {
+    setSelectedIds((current) =>
+      current.includes(signalId)
+        ? current.filter((id) => id !== signalId)
+        : [...current, signalId]
+    );
+  }
+
+  function toggleArticle(signalId) {
+    setExpandedIds((current) =>
+      current.includes(signalId)
+        ? current.filter((id) => id !== signalId)
+        : [...current, signalId]
+    );
+  }
+
+  const result = evaluateBurnoutRecognition(selectedIds);
+
+  return (
+    <section
+      aria-labelledby="burnout-signals-title"
+      style={{
+        margin: '2rem 0',
+        padding: '1.5rem',
+        background: '#fff7ed',
+        borderRadius: '16px',
+        border: '1px solid #f2d4a7',
+      }}
+    >
+      <h2 id="burnout-signals-title">Señales de alarma</h2>
+      <p style={{ marginTop: 0, color: '#53657a' }}>{BURNOUT_SIGNAL_QUESTION}</p>
+      <div style={{ display: 'grid', gap: '0.75rem' }}>
+        {signals.map((signal) => {
+          const expanded = expandedIds.includes(signal.id);
+          const selected = selectedIds.includes(signal.id);
+          return (
+            <article
+              key={signal.id}
+              style={{
+                padding: '1rem',
+                background: '#fff',
+                borderRadius: '12px',
+                border: selected ? '2px solid #b36b3e' : '1px solid #eadbbd',
+              }}
+            >
+              <label style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  onChange={() => toggleSignal(signal.id)}
+                  style={{ marginTop: '0.25rem' }}
+                />
+                <span>
+                  <strong>{signal.title}</strong>
+                  <span style={{ display: 'block', marginTop: '0.25rem', color: '#53657a' }}>
+                    {signal.description}
+                  </span>
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={() => toggleArticle(signal.id)}
+                aria-expanded={expanded}
+                style={{ marginTop: '0.75rem' }}
+              >
+                {expanded ? 'Ocultar reflexión' : 'Ver reflexión'}
+              </button>
+              {expanded && (
+                <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
+                  <p style={{ margin: 0 }}>{signal.question}</p>
+                  <p style={{ margin: 0, color: '#77512f' }}>
+                    <strong>Próximo paso:</strong> {signal.action}
+                  </p>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+      <p role="status" style={{ marginBottom: 0, marginTop: '1rem', fontWeight: 600 }}>
+        Has reconocido {result.recognizedCount} señal
+        {result.recognizedCount === 1 ? '' : 'es'} ({result.level}).
+      </p>
+      {result.recognizedCount > 0 && (
+        <p style={{ color: '#77512f' }}>
+          Reconocer estas señales es un primer paso. Prioriza descanso, apoyo y límites realistas.
+        </p>
       )}
     </section>
   );
@@ -1639,6 +1764,7 @@ function App() {
       {oauthError && <p role="alert">No se pudo iniciar sesión: {oauthError}</p>}
       {isAuthenticated && <p role="status">Sesión iniciada correctamente.</p>}
       <DailyCheckInWidget currentUser={currentUser} />
+      <BurnoutSignalsView />
       <WellbeingDashboardView
         currentUser={currentUser}
         isAuthenticated={isAuthenticated}
