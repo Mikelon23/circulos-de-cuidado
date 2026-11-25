@@ -23,6 +23,7 @@ import { createRiskAlertService } from './risk-alerts.cjs';
 import { createGratitudeService } from './gratitudes.cjs';
 import { createWellbeingDashboardService } from './wellbeing-dashboard.cjs';
 import { createBurnoutSignalsService } from './burnout-signals.cjs';
+import { createProfessionalResourcesService } from './professional-resources.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -51,6 +52,7 @@ const sessionThemeService = createSessionThemeService();
 const checkInEmotionalService = createCheckInEmotionalService();
 const gratitudeService = createGratitudeService();
 const burnoutSignalsService = createBurnoutSignalsService();
+const professionalResourcesService = createProfessionalResourcesService();
 const wellbeingDashboardService = createWellbeingDashboardService({
   checkInService: checkInEmotionalService,
   sessionService,
@@ -294,6 +296,31 @@ app.post('/api/v1/burnout-signals/evaluate', (req, res) => {
     });
   } catch (error) {
     return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/professional-resources', (req, res) => {
+  try {
+    return res.json({
+      data: {
+        regions: professionalResourcesService.listRegions(),
+        resources: professionalResourcesService.listResources({
+          region: req.query.region,
+          modalidad: req.query.modality,
+          coste: req.query.cost,
+        }),
+      },
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/professional-resources/:id', (req, res) => {
+  try {
+    return res.json({ data: professionalResourcesService.getResource(req.params.id) });
+  } catch (error) {
+    return res.status(404).json({ error: error.message });
   }
 });
 

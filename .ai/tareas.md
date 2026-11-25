@@ -78,7 +78,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  52 | Implementar "momento de gratitud"               | Micro-interacción              | completado  |
 |  53 | Crear dashboard de bienestar del cuidador       | Vista personal                 | completado |
 |  54 | Implementar "señales de alarma" educativas      | Artículos interactivos         | completado |
-|  55 | Implementar derivación a recursos profesionales | Directorio + contacto          | pendiente  |
+|  55 | Implementar derivación a recursos profesionales | Directorio + contacto          | completado |
 |  56 | Crear sistema de logros/badges                  | Gamificación ligera            | pendiente  |
 |  57 | Implementar diario compartido del círculo       | Feed por círculo               | pendiente  |
 |  58 | Implementar sistema de "apoyo rápido"           | Botón de emergencia emocional  | pendiente  |
@@ -601,7 +601,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 55
 
 - id: 55
-- estado: pendiente
+- estado: completado
 - titulo: Implementar derivación a recursos profesionales
 - objetivo: Lista de psicólogos/terapeutas gratuitos o de bajo costo por región
 - entregable: Directorio + contacto
