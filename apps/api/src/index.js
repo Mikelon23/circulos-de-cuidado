@@ -22,6 +22,7 @@ import { createCheckInEmotionalService } from './check-ins.cjs';
 import { createRiskAlertService } from './risk-alerts.cjs';
 import { createGratitudeService } from './gratitudes.cjs';
 import { createWellbeingDashboardService } from './wellbeing-dashboard.cjs';
+import { createBurnoutSignalsService } from './burnout-signals.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -49,6 +50,7 @@ const messageService = createMessageService();
 const sessionThemeService = createSessionThemeService();
 const checkInEmotionalService = createCheckInEmotionalService();
 const gratitudeService = createGratitudeService();
+const burnoutSignalsService = createBurnoutSignalsService();
 const wellbeingDashboardService = createWellbeingDashboardService({
   checkInService: checkInEmotionalService,
   sessionService,
@@ -268,6 +270,28 @@ app.post('/api/v1/gratitudes', requireAuth(authService), (req, res) => {
 app.get('/api/v1/gratitudes/me', requireAuth(authService), (req, res) => {
   try {
     return res.json({ data: gratitudeService.listGratitudesByUser(req.auth.sub) });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/burnout-signals', (_req, res) => {
+  res.json({ data: burnoutSignalsService.listSignals() });
+});
+
+app.get('/api/v1/burnout-signals/:id', (req, res) => {
+  try {
+    return res.json({ data: burnoutSignalsService.getSignal(req.params.id) });
+  } catch (error) {
+    return res.status(404).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/burnout-signals/evaluate', (req, res) => {
+  try {
+    return res.json({
+      data: burnoutSignalsService.evaluateRecognition(req.body?.selectedIds),
+    });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
