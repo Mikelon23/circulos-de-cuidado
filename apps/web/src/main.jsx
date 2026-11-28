@@ -806,6 +806,218 @@ function AchievementsView({ currentUser, isAuthenticated }) {
   );
 }
 
+function SharedDiaryView({ currentUser, isAuthenticated }) {
+  const [circles, setCircles] = useState([]);
+  const [circleId, setCircleId] = useState('');
+  const [entries, setEntries] = useState([]);
+  const [entryText, setEntryText] = useState('');
+  const [supportTextByEntry, setSupportTextByEntry] = useState({});
+  const [errorMessage, setErrorMessage] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) {
+      setCircles([]);
+      setCircleId('');
+      return;
+    }
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) return;
+
+    Promise.all([
+      authenticatedRequest('/api/v1/circles', accessToken),
+      authenticatedRequest('/api/v1/circle-members', accessToken),
+    ])
+      .then(([allCircles, members]) => {
+        const activeCircleIds = new Set(
+          members
+            .filter((member) => member.usuarioId === currentUser.id && member.estado === 'activo')
+            .map((member) => member.circleId)
+        );
+        const availableCircles = allCircles.filter(
+          (circle) => currentUser.rol === 'admin' || activeCircleIds.has(circle.id)
+        );
+        setCircles(availableCircles);
+        setCircleId((current) =>
+          availableCircles.some((circle) => circle.id === current) ? current : availableCircles[0]?.id || ''
+        );
+        setErrorMessage('');
+      })
+      .catch((error) => setErrorMessage(error.message));
+  }, [currentUser, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !circleId) {
+      setEntries([]);
+      return;
+    }
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) return;
+    authenticatedRequest(`/api/v1/circles/${encodeURIComponent(circleId)}/diary`, accessToken)
+      .then((data) => {
+        setEntries(data);
+        setErrorMessage('');
+      })
+      .catch((error) => setErrorMessage(error.message));
+  }, [circleId, isAuthenticated]);
+
+  async function submitEntry(event) {
+    event.preventDefault();
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken || !circleId) return;
+    setStatusMessage('');
+    try {
+      await authenticatedRequest(`/api/v1/circles/${encodeURIComponent(circleId)}/diary`, accessToken, {
+        method: 'POST',
+        body: JSON.stringify({ contenido: entryText }),
+      });
+      setEntryText('');
+      setStatusMessage('Tu entrada quedó compartida en el círculo.');
+      const data = await authenticatedRequest(
+        `/api/v1/circles/${encodeURIComponent(circleId)}/diary`,
+        accessToken
+      );
+      setEntries(data);
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
+  }
+
+  async function submitSupport(entryId) {
+    const accessToken = localStorage.getItem('accessToken');
+    const contenido = supportTextByEntry[entryId]?.trim();
+    if (!accessToken || !circleId || !contenido) return;
+    setStatusMessage('');
+    try {
+      await authenticatedRequest(
+        `/api/v1/circles/${encodeURIComponent(circleId)}/diary/${encodeURIComponent(entryId)}/support`,
+        accessToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({ contenido }),
+        }
+      );
+      setSupportTextByEntry((current) => ({ ...current, [entryId]: '' }));
+      setStatusMessage('Tu apoyo quedó registrado.');
+      const data = await authenticatedRequest(
+        `/api/v1/circles/${encodeURIComponent(circleId)}/diary`,
+        accessToken
+      );
+      setEntries(data);
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
+  }
+
+  return (
+    <section
+      aria-labelledby="shared-diary-title"
+      style={{
+        margin: '2rem 0',
+        padding: '1.5rem',
+        background: '#f7fbff',
+        borderRadius: '16px',
+        border: '1px solid #dbe9f6',
+      }}
+    >
+      <h2 id="shared-diary-title">Diario compartido del círculo</h2>
+      <p style={{ marginTop: 0, color: '#53657a' }}>
+        Comparte una reflexión y deja mensajes de apoyo respetuosos.
+      </p>
+
+      {!isAuthenticated ? (
+        <p>Inicia sesión para participar en el diario de tu círculo.</p>
+      ) : !circles.length ? (
+        <p>Aún no perteneces a un círculo activo.</p>
+      ) : (
+        <>
+          <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 600, maxWidth: '360px' }}>
+            Círculo
+            <select value={circleId} onChange={(event) => setCircleId(event.target.value)}>
+              {circles.map((circle) => (
+                <option key={circle.id} value={circle.id}>{circle.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          <form onSubmit={submitEntry} style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
+            <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 600 }}>
+              ¿Qué te gustaría compartir?
+              <textarea
+                value={entryText}
+                onChange={(event) => setEntryText(event.target.value)}
+                rows={3}
+                maxLength={2000}
+                required
+                placeholder="Escribe con tus propias palabras..."
+              />
+            </label>
+            <button type="submit" style={{ justifySelf: 'start' }}>Compartir entrada</button>
+          </form>
+
+          {statusMessage && <p role="status">{statusMessage}</p>}
+          {errorMessage && <p role="alert">{errorMessage}</p>}
+
+          <div style={{ display: 'grid', gap: '0.75rem', marginTop: '1.25rem' }}>
+            {!entries.length ? (
+              <p>Todavía no hay entradas compartidas.</p>
+            ) : entries.map((entry) => (
+              <article
+                key={entry.id}
+                style={{
+                  padding: '1rem',
+                  background: '#fff',
+                  borderRadius: '12px',
+                  border: '1px solid #dbe9f6',
+                }}
+              >
+                <p style={{ marginTop: 0, whiteSpace: 'pre-wrap' }}>{entry.contenido}</p>
+                <p style={{ color: '#53657a', fontSize: '0.85rem' }}>
+                  {new Date(entry.createdAt).toLocaleString('es-ES')}
+                </p>
+                {entry.supports.map((support) => (
+                  <p
+                    key={support.id}
+                    style={{
+                      margin: '0.5rem 0',
+                      padding: '0.65rem',
+                      background: '#edf9f4',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <strong>Apoyo:</strong> {support.contenido}
+                  </p>
+                ))}
+                <label style={{ display: 'grid', gap: '0.35rem', fontWeight: 600 }}>
+                  Responder con apoyo
+                  <textarea
+                    value={supportTextByEntry[entry.id] || ''}
+                    onChange={(event) =>
+                      setSupportTextByEntry((current) => ({
+                        ...current,
+                        [entry.id]: event.target.value,
+                      }))
+                    }
+                    rows={2}
+                    maxLength={2000}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => submitSupport(entry.id)}
+                  style={{ marginTop: '0.5rem' }}
+                >
+                  Enviar apoyo
+                </button>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 function CheckInHistoryView({ currentUser, isAuthenticated }) {
   const [period, setPeriod] = useState('month');
   const [history, setHistory] = useState([]);
@@ -1998,6 +2210,10 @@ function App() {
       <BurnoutSignalsView />
       <ProfessionalResourcesView />
       <AchievementsView
+        currentUser={currentUser}
+        isAuthenticated={isAuthenticated}
+      />
+      <SharedDiaryView
         currentUser={currentUser}
         isAuthenticated={isAuthenticated}
       />
