@@ -25,6 +25,7 @@ import { createWellbeingDashboardService } from './wellbeing-dashboard.cjs';
 import { createBurnoutSignalsService } from './burnout-signals.cjs';
 import { createProfessionalResourcesService } from './professional-resources.cjs';
 import { createAchievementsService } from './achievements.cjs';
+import { createSharedDiaryService } from './shared-diary.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -64,6 +65,10 @@ const achievementsService = createAchievementsService({
   userService,
   memberService: circleMemberService,
   wellbeingDashboardService,
+});
+const sharedDiaryService = createSharedDiaryService({
+  circleService,
+  memberService: circleMemberService,
 });
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
@@ -352,6 +357,48 @@ app.post('/api/v1/achievements/ritual-completions', requireAuth(authService), (r
     });
   } catch (error) {
     return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/circles/:id/diary', requireAuth(authService), (req, res) => {
+  try {
+    return res.json({
+      data: sharedDiaryService.listEntries(req.params.id, req.auth.sub),
+    });
+  } catch (error) {
+    const status = error.message.includes('miembro activo') ? 403 : 400;
+    return res.status(status).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circles/:id/diary', requireAuth(authService), (req, res) => {
+  try {
+    return res.status(201).json({
+      data: sharedDiaryService.createEntry(
+        req.params.id,
+        req.auth.sub,
+        req.body?.contenido
+      ),
+    });
+  } catch (error) {
+    const status = error.message.includes('miembro activo') ? 403 : 400;
+    return res.status(status).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/circles/:circleId/diary/:entryId/support', requireAuth(authService), (req, res) => {
+  try {
+    return res.status(201).json({
+      data: sharedDiaryService.addSupport(
+        req.params.circleId,
+        req.params.entryId,
+        req.auth.sub,
+        req.body?.contenido
+      ),
+    });
+  } catch (error) {
+    const status = error.message.includes('miembro activo') ? 403 : 400;
+    return res.status(status).json({ error: error.message });
   }
 });
 

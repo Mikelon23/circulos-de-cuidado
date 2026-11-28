@@ -80,7 +80,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  54 | Implementar "señales de alarma" educativas      | Artículos interactivos         | completado |
 |  55 | Implementar derivación a recursos profesionales | Directorio + contacto          | completado |
 |  56 | Crear sistema de logros/badges                  | Gamificación ligera            | completado |
-|  57 | Implementar diario compartido del círculo       | Feed por círculo               | pendiente  |
+|  57 | Implementar diario compartido del círculo       | Feed por círculo               | completado |
 |  58 | Implementar sistema de "apoyo rápido"           | Botón de emergencia emocional  | pendiente  |
 |  59 | Crear foro público (lectura)                    | Blog/feed público              | pendiente  |
 |  60 | Implementar "pregunta de la semana"             | Sección destacada              | pendiente  |
@@ -621,7 +621,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 57
 
 - id: 57
-- estado: pendiente
+- estado: completado
 - titulo: Implementar diario compartido del círculo
 - objetivo: Espacio donde cada miembro escribe y los demás responden con apoyo
 - entregable: Feed por círculo
