@@ -79,7 +79,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 |  53 | Crear dashboard de bienestar del cuidador       | Vista personal                 | completado |
 |  54 | Implementar "señales de alarma" educativas      | Artículos interactivos         | completado |
 |  55 | Implementar derivación a recursos profesionales | Directorio + contacto          | completado |
-|  56 | Crear sistema de logros/badges                  | Gamificación ligera            | pendiente  |
+|  56 | Crear sistema de logros/badges                  | Gamificación ligera            | completado |
 |  57 | Implementar diario compartido del círculo       | Feed por círculo               | pendiente  |
 |  58 | Implementar sistema de "apoyo rápido"           | Botón de emergencia emocional  | pendiente  |
 |  59 | Crear foro público (lectura)                    | Blog/feed público              | pendiente  |
@@ -610,7 +610,7 @@ Este archivo es la fuente oficial del roadmap. El agente debe leerlo completo an
 ### Tarea 56
 
 - id: 56
-- estado: pendiente
+- estado: completado
 - titulo: Crear sistema de logros/badges
 - objetivo: "Primer mes conectado", "Apoyo a 5 cuidadores", "Respiro semanal"
 - entregable: Gamificación ligera

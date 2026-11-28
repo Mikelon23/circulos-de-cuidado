@@ -24,6 +24,7 @@ import { createGratitudeService } from './gratitudes.cjs';
 import { createWellbeingDashboardService } from './wellbeing-dashboard.cjs';
 import { createBurnoutSignalsService } from './burnout-signals.cjs';
 import { createProfessionalResourcesService } from './professional-resources.cjs';
+import { createAchievementsService } from './achievements.cjs';
 import { createMessageService } from './messages.cjs';
 import {
   createCorsMiddleware,
@@ -58,6 +59,11 @@ const wellbeingDashboardService = createWellbeingDashboardService({
   sessionService,
   attendanceService,
   memberService: circleMemberService,
+});
+const achievementsService = createAchievementsService({
+  userService,
+  memberService: circleMemberService,
+  wellbeingDashboardService,
 });
 const waitingQueueService = createWaitingQueueService();
 const circleSuggestionService = createCircleSuggestionService();
@@ -321,6 +327,31 @@ app.get('/api/v1/professional-resources/:id', (req, res) => {
     return res.json({ data: professionalResourcesService.getResource(req.params.id) });
   } catch (error) {
     return res.status(404).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/achievements/me', requireAuth(authService), (req, res) => {
+  try {
+    return res.json({
+      data: achievementsService.getAchievements(req.auth.sub, {
+        now: req.query.now,
+      }),
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/achievements/ritual-completions', requireAuth(authService), (req, res) => {
+  try {
+    return res.status(201).json({
+      data: achievementsService.recordRitualCompletion(req.auth.sub, {
+        ritualId: req.body?.ritualId,
+        completedAt: req.body?.completedAt,
+      }),
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
   }
 });
 

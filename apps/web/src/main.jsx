@@ -23,6 +23,7 @@ import {
   normalizeProfessionalResourceFilters,
   filterProfessionalResources,
 } from './professional-resources-utils.js';
+import { calculateBadgePercentage } from './achievements-utils.js';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -700,6 +701,107 @@ function ProfessionalResourcesView() {
       <p style={{ marginBottom: 0, marginTop: '1rem', color: '#77512f' }}>
         Si existe peligro inmediato para tu seguridad o la de otra persona, contacta a emergencias.
       </p>
+    </section>
+  );
+}
+
+function AchievementsView({ currentUser, isAuthenticated }) {
+  const [achievementData, setAchievementData] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) {
+      setAchievementData(null);
+      setErrorMessage('');
+      return;
+    }
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) return;
+
+    let active = true;
+    fetch(`${apiUrl}/api/v1/achievements/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+      .then((response) => response.json().then((body) => ({ response, body })))
+      .then(({ response, body }) => {
+        if (!active) return;
+        if (!response.ok) throw new Error(body.error || 'No se pudieron cargar los logros');
+        setAchievementData(body.data);
+        setErrorMessage('');
+      })
+      .catch((error) => {
+        if (active) setErrorMessage(error.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [currentUser, isAuthenticated]);
+
+  return (
+    <section
+      aria-labelledby="achievements-title"
+      style={{
+        margin: '2rem 0',
+        padding: '1.5rem',
+        background: '#fffbed',
+        borderRadius: '16px',
+        border: '1px solid #ecdba7',
+      }}
+    >
+      <h2 id="achievements-title">Mis logros</h2>
+      <p style={{ marginTop: 0, color: '#53657a' }}>
+        Reconocemos la constancia y el apoyo que construyes poco a poco.
+      </p>
+      {!isAuthenticated ? (
+        <p>Inicia sesión para ver tus logros.</p>
+      ) : errorMessage ? (
+        <p role="alert">{errorMessage}</p>
+      ) : !achievementData ? (
+        <p>Cargando tus insignias…</p>
+      ) : (
+        <>
+          <p style={{ fontWeight: 600 }}>
+            {achievementData.earnedCount} de {achievementData.badges.length} logros obtenidos
+          </p>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '0.75rem',
+            }}
+          >
+            {achievementData.badges.map((badge) => {
+              const percentage = calculateBadgePercentage(badge.progress, badge.target);
+              return (
+                <article
+                  key={badge.id}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '12px',
+                    background: badge.earned ? '#edf9f4' : '#fff',
+                    border: badge.earned ? '2px solid #68a78d' : '1px solid #e5ddbd',
+                  }}
+                >
+                  <div style={{ fontSize: '2rem', marginBottom: '0.35rem' }}>
+                    {badge.earned ? '🏅' : '○'}
+                  </div>
+                  <strong>{badge.title}</strong>
+                  <p style={{ color: '#53657a', minHeight: '42px' }}>{badge.description}</p>
+                  <progress
+                    aria-label={`Progreso de ${badge.title}`}
+                    value={percentage}
+                    max="100"
+                    style={{ width: '100%' }}
+                  />
+                  <p style={{ marginBottom: 0, fontSize: '0.9rem' }}>
+                    {badge.progress} / {badge.target}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        </>
+      )}
     </section>
   );
 }
@@ -1895,6 +1997,10 @@ function App() {
       <DailyCheckInWidget currentUser={currentUser} />
       <BurnoutSignalsView />
       <ProfessionalResourcesView />
+      <AchievementsView
+        currentUser={currentUser}
+        isAuthenticated={isAuthenticated}
+      />
       <WellbeingDashboardView
         currentUser={currentUser}
         isAuthenticated={isAuthenticated}
