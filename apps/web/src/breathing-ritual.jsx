@@ -6,12 +6,14 @@ import {
 } from './breathing-ritual-utils.js';
 
 const INITIAL_RITUAL = BREATHING_RITUALS[0];
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function BreathingRitual() {
   const [ritualId, setRitualId] = useState(INITIAL_RITUAL.id);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [startedAt, setStartedAt] = useState(null);
   const [now, setNow] = useState(() => Date.now());
+  const [hasRecordedCompletion, setHasRecordedCompletion] = useState(false);
   const ritual = BREATHING_RITUALS.find((entry) => entry.id === ritualId) || INITIAL_RITUAL;
   const isPlaying = startedAt !== null;
 
@@ -37,6 +39,40 @@ export default function BreathingRitual() {
     }
   }, [playback.isFinished, playback.totalSeconds, startedAt]);
 
+  useEffect(() => {
+    if (!playback.isFinished || hasRecordedCompletion) return;
+    setHasRecordedCompletion(true);
+
+    try {
+      const saved = JSON.parse(localStorage.getItem('breathingCompletions') || '[]');
+      const completions = Array.isArray(saved) ? saved : [];
+      completions.push({
+        ritualId,
+        completedAt: new Date().toISOString(),
+      });
+      localStorage.setItem('breathingCompletions', JSON.stringify(completions.slice(-100)));
+    } catch {
+      localStorage.setItem(
+        'breathingCompletions',
+        JSON.stringify([{ ritualId, completedAt: new Date().toISOString() }])
+      );
+    }
+
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) return;
+    fetch(`${apiUrl}/api/v1/achievements/ritual-completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        ritualId,
+        completedAt: new Date().toISOString(),
+      }),
+    }).catch(() => {});
+  }, [playback.isFinished, hasRecordedCompletion, ritualId]);
+
   function togglePlayback() {
     if (isPlaying) {
       setElapsedSeconds(playback.elapsedSeconds);
@@ -53,6 +89,7 @@ export default function BreathingRitual() {
     setElapsedSeconds(0);
     setStartedAt(null);
     setNow(Date.now());
+    setHasRecordedCompletion(false);
   }
 
   function chooseRitual(id) {
